@@ -320,7 +320,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # needs to be able to trigger CI, as default token does not retrigger
-      - name: token (mirror: default)
+      - name: "token (mirror default)"
         id: generate_token
         run: echo "token=${GITHUB_TOKEN}" >> "$GITHUB_OUTPUT"
         env:
