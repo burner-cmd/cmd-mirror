@@ -1,0 +1,11 @@
+name: Probe
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+jobs:
+  ping:
+    if: startsWith(github.event.comment.body, '/probe')
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "probe fired"
