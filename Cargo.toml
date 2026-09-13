@@ -3,4 +3,3 @@ members = ["substrate/utils/frame/omni-bencher", "substrate/utils/frame/kitchens
 
 [profile.production]
 inherits = "release"
-members = ["substrate/utils/frame/kitchensink-runtime"]
