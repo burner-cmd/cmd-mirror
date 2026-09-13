@@ -1,5 +1,6 @@
 [workspace]
-members = ["substrate/utils/frame/omni-bencher"]
+members = ["substrate/utils/frame/omni-bencher", "substrate/utils/frame/kitchensink-runtime"]
 
 [profile.production]
 inherits = "release"
+members = ["substrate/utils/frame/kitchensink-runtime"]
