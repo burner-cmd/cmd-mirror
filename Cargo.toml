@@ -1,2 +1,5 @@
 [workspace]
 members = ["substrate/utils/frame/omni-bencher"]
+
+[profile.production]
+inherits = "release"

