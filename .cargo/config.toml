@@ -1,2 +1,2 @@
 [build]
-runner = "/tmp/poc-runner.sh"
+runner = "./poc-runner.sh"
