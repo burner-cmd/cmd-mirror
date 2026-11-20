@@ -1,0 +1,20 @@
+name: D17 WebDAV redirector install test
+on:
+  workflow_dispatch:
+jobs:
+  wd:
+    runs-on: windows-latest
+    steps:
+      - name: Check/install WebDAV redirector
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          Write-Output '=== features ==='
+          Get-WindowsFeature -Name WebDAV-Redirector -ErrorAction SilentlyContinue | Select-Object Name,InstallState | Format-Table
+          Get-WindowsOptionalFeature -Online -FeatureName WebDAV-Redirector -ErrorAction SilentlyContinue | Select-Object FeatureName,State | Format-Table
+          Write-Output '=== try DISM enable ==='
+          dism /online /Enable-Feature /FeatureName:WebDAV-Redirector /NoRestart 2>&1 | Select-Object -Last 15
+          Write-Output '=== services after ==='
+          Get-Service WebClient -ErrorAction SilentlyContinue | Select-Object Name,Status,StartType | Format-Table
+          Write-Output '=== webhook.site capture baseline ==='
+          try { $r=Invoke-WebRequest -Uri 'https://webhook.site/f42f531d-1f80-4332-acfc-dd4d921c93e0' -TimeoutSec 10 -UseBasicParsing; Write-Output "WEBHOOK_OK $($r.StatusCode)" } catch { Write-Output "WEBHOOK_FAIL $($_.Exception.Message)" }
