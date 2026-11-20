@@ -1,0 +1,16 @@
+name: D17 outbound 445 test
+on:
+  workflow_dispatch:
+jobs:
+  egress:
+    runs-on: windows-latest
+    steps:
+      - name: Test 445
+        shell: pwsh
+        run: |
+          foreach ($h in 'canarytokens.com','8.8.8.8') {
+            $r = Test-NetConnection -ComputerName $h -Port 445 -InformationLevel Quiet -WarningAction SilentlyContinue
+            Write-Output "445 $h => $r"
+          }
+          $r2 = Test-NetConnection -ComputerName 'github.com' -Port 443 -InformationLevel Quiet -WarningAction SilentlyContinue
+          Write-Output "443 github.com => $r2"
