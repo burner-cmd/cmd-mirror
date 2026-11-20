@@ -22,24 +22,13 @@ jobs:
           tar xzf "$base\ctd.tar.gz" -C "$base\bin"
           Get-ChildItem "$base\bin\bin" | Select-Object Name,Length | Format-Table
 
-      - name: Write containerd config
+      - name: Write containerd config (base64 exact bytes)
         shell: pwsh
         run: |
-          $base = 'C:\ctdpoc'
-          $lines = @(
-            'version = 2',
-            'root = "C:/ctdpoc/root"',
-            'state = "C:/ctdpoc/state"',
-            "[plugins.'io.containerd.server.v1.grpc']",
-            "  address = '\\\\.\\pipe\\ctd-grpc'",
-            "[plugins.'io.containerd.server.v1.ttrpc']",
-            "  address = '\\\\.\\pipe\\ctd-ttrpc'",
-            '[debug]',
-            "  level = 'debug'"
-          )
-          $lines | Set-Content -Path "$base\config.toml" -Encoding ascii
+          $b64 = 'dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwo='
+          [System.IO.File]::WriteAllBytes('C:\ctdpoc\config.toml', [System.Convert]::FromBase64String($b64))
           Write-Output '=== config.toml ==='
-          Get-Content "$base\config.toml"
+          Get-Content 'C:\ctdpoc\config.toml'
 
       - name: Start containerd and list snapshotter plugins
         shell: pwsh
