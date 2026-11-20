@@ -1,0 +1,26 @@
+name: D17 port 445 diagnostic
+on:
+  workflow_dispatch:
+jobs:
+  diag:
+    runs-on: windows-latest
+    steps:
+      - name: Check port 445 availability
+        shell: pwsh
+        run: |
+          Write-Output '=== LanmanServer ==='
+          Get-Service LanmanServer -ErrorAction SilentlyContinue | Select-Object Name,Status,StartType | Format-Table
+          Write-Output '=== netstat 445 ==='
+          netstat -ano | Select-String ':445'
+          Write-Output '=== excluded portrange tcp ==='
+          netsh interface ipv4 show excludedportrange protocol=tcp 2>&1 | Select-Object -First 40
+          Write-Output '=== stop lanmanserver ==='
+          net stop lanmanserver /y 2>&1
+          Stop-Service LanmanServer -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 2
+          Write-Output '=== after stop netstat 445 ==='
+          netstat -ano | Select-String ':445'
+          Write-Output '=== python bind test 445 ==='
+          python -c "import socket;s=socket.socket();s.bind(('0.0.0.0',445));print('BIND_445_OK');s.close()" 2>&1
+          Write-Output '=== python bind test 139 ==='
+          python -c "import socket;s=socket.socket();s.bind(('0.0.0.0',139));print('BIND_139_OK');s.close()" 2>&1
