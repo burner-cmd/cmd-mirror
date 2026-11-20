@@ -1,0 +1,16 @@
+name: D17 pktmon components diag
+on:
+  workflow_dispatch:
+jobs:
+  pd:
+    runs-on: windows-latest
+    steps:
+      - name: pktmon components + tools
+        shell: pwsh
+        run: |
+          Write-Output '=== pktmon comp list ==='
+          pktmon comp list 2>&1 | Select-Object -First 60
+          Write-Output '=== capture tools ==='
+          foreach ($t in 'tshark','windump','netsh','pktmon') { $c=Get-Command $t -ErrorAction SilentlyContinue; Write-Output "$t => $($c.Source)" }
+          Write-Output '=== netsh trace help ==='
+          netsh trace start help 2>&1 | Select-Object -First 5
