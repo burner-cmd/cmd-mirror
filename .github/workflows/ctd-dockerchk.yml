@@ -1,0 +1,18 @@
+name: D17 docker mode check
+on:
+  workflow_dispatch:
+jobs:
+  dk:
+    runs-on: windows-latest
+    steps:
+      - name: Docker info
+        shell: pwsh
+        run: |
+          Write-Output '=== docker version ==='
+          docker version --format '{{.Server.Os}}/{{.Server.Arch}}' 2>&1
+          Write-Output '=== docker info OSType ==='
+          docker info --format '{{.OSType}}' 2>&1
+          Write-Output '=== docker network ls ==='
+          docker network ls 2>&1
+          Write-Output '=== try alpine run ==='
+          docker run --rm alpine:latest sh -c "echo CONTAINER_OK; ip addr | head -20" 2>&1
