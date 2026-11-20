@@ -30,10 +30,10 @@ jobs:
             'version = 2',
             'root = "C:/ctdpoc/root"',
             'state = "C:/ctdpoc/state"',
-            '[grpc]',
-            "  address = '127.0.0.1:22333'",
-            '  uid = 0',
-            '  gid = 0',
+            "[plugins.'io.containerd.server.v1.grpc']",
+            "  address = '\\\\.\\pipe\\ctd-grpc'",
+            "[plugins.'io.containerd.server.v1.ttrpc']",
+            "  address = '\\\\.\\pipe\\ctd-ttrpc'",
             '[debug]',
             "  level = 'debug'"
           )
@@ -51,7 +51,7 @@ jobs:
           Write-Output '--- alive? ---'
           Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
           Write-Output '--- plugins (snapshotter) ---'
-          & "$base\bin\bin\ctr.exe" --address 127.0.0.1:22333 plugins ls 2>&1 | Select-String 'snapshotter'
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'snapshotter'
           Write-Output '--- stderr tail ---'
           if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 40 }
 
@@ -60,7 +60,7 @@ jobs:
         run: |
           $base = 'C:\ctdpoc'
           $ctr = "$base\bin\bin\ctr.exe"
-          $addr = '127.0.0.1:22333'
+          $addr = '\\.\pipe\ctd-grpc'
           $loc = 'C:\ctdpoc\canary'
           $label = "containerd.io/snapshot/io.microsoft.container.storage.rootfs.location=$loc"
           Write-Output "=== malicious label: $label ==="
