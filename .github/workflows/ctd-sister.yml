@@ -1,0 +1,19 @@
+name: D17 sister port tests
+on:
+  workflow_dispatch:
+jobs:
+  sister:
+    runs-on: windows-latest
+    steps:
+      - name: Sister port tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
+          Write-Output "IP=$ip"
+          Write-Output "=== bind 445 on specific IP ==="
+          python -c "import socket,sys;s=socket.socket();s.bind((sys.argv[1],445));print('BIND_SPECIFIC_445_OK',sys.argv[1]);s.close()" $ip 2>&1
+          Write-Output "=== bind 139 on 0.0.0.0 ==="
+          python -c "import socket;s=socket.socket();s.bind(('0.0.0.0',139));print('BIND_139_OK');s.close()" 2>&1
+          Write-Output "=== TCP connect test 445 to self ==="
+          python -c "import socket,sys;s=socket.socket();s.settimeout(5);r=s.connect_ex((sys.argv[1],445));print('CONNECT_445_RESULT',r);s.close()" $ip 2>&1
