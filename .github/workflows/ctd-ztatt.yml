@@ -58,7 +58,7 @@ jobs:
           Start-Sleep -Seconds 6
           Get-Content "$base\smberr.log" -Tail 15
           Write-Output '=== KEEPALIVE (attacker SMB up) ==='
-          Start-Sleep -Seconds 600
+          Start-Sleep -Seconds 330
           Write-Output '=== final smb log ==='
           if (Test-Path "$base\smb.log") { Get-Content "$base\smb.log" -Tail 60 }
 
