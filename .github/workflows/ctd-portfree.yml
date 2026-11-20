@@ -1,0 +1,25 @@
+name: D17 free port 445
+on:
+  workflow_dispatch:
+jobs:
+  free:
+    runs-on: windows-latest
+    steps:
+      - name: Try to free 445
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          Write-Output '=== before ==='
+          netstat -ano | Select-String ':445'
+          Get-Service docker,hns,LanmanServer,LanmanWorkstation -ErrorAction SilentlyContinue | Select-Object Name,Status | Format-Table
+          Write-Output '=== close SMB sessions/files ==='
+          Get-SmbSession -ErrorAction SilentlyContinue | Close-SmbSession -Force -ErrorAction SilentlyContinue
+          Get-SmbOpenFile -ErrorAction SilentlyContinue | Close-SmbOpenFile -Force -ErrorAction SilentlyContinue
+          Write-Output '=== stop services ==='
+          foreach ($s in 'docker','hns','LanmanServer','LanmanWorkstation') { Stop-Service $s -Force -ErrorAction SilentlyContinue }
+          net stop lanmanserver /y 2>&1
+          Start-Sleep -Seconds 4
+          Write-Output '=== after ==='
+          netstat -ano | Select-String ':445'
+          Write-Output '=== bind test ==='
+          python -c "import socket;s=socket.socket();s.bind(('0.0.0.0',445));print('BIND_445_OK');s.close()" 2>&1
