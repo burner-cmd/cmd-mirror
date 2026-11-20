@@ -1,0 +1,16 @@
+name: D17 external reachability test
+on:
+  workflow_dispatch:
+jobs:
+  reach:
+    runs-on: windows-latest
+    steps:
+      - name: Reach local listener
+        shell: pwsh
+        run: |
+          try {
+            $r = Invoke-WebRequest -Uri 'http://49.47.215.67:8899/' -TimeoutSec 12 -UseBasicParsing
+            Write-Output "REACH_OK status=$($r.StatusCode) len=$($r.Content.Length)"
+          } catch {
+            Write-Output "REACH_FAIL $($_.Exception.Message)"
+          }
