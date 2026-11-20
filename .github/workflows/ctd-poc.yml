@@ -1,6 +1,8 @@
 name: CAN-000047 LCOW host-file write PoC
 on:
   workflow_dispatch:
+  push:
+    branches: [cmd-bot]
 
 jobs:
   poc:
