@@ -1,0 +1,40 @@
+name: CTD LCOW smoke test
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    steps:
+      - name: OS + arch
+        shell: pwsh
+        run: |
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsArchitecture | Format-List
+          whoami
+          [Security.Principal.WindowsIdentity]::GetCurrent().Name
+
+      - name: Check containerd / ctr / Docker / Hyper-V
+        shell: pwsh
+        run: |
+          foreach ($c in @('containerd','ctr','ctr.exe','docker','nerdctl','vctl','hcsdiag')) {
+            $p = Get-Command $c -ErrorAction SilentlyContinue
+            if ($p) { Write-Output "$c => $($p.Source)" } else { Write-Output "$c => NOT FOUND" }
+          }
+          Write-Output "--- containerd paths ---"
+          foreach ($p in @('C:\Program Files\containerd','C:\ProgramData\containerd','C:\Program Files\Docker','C:\ProgramData\docker')) {
+            if (Test-Path $p) { Write-Output "EXISTS $p"; Get-ChildItem $p -ErrorAction SilentlyContinue | Select-Object -First 20 -ExpandProperty Name }
+          }
+          Write-Output "--- Hyper-V / VM compute ---"
+          foreach ($f in @('C:\Windows\System32\vmcompute.dll','C:\Windows\System32\hcsshim.dll','C:\Windows\System32\WindowsVirtualization.dll')) {
+            Write-Output "$f => $(Test-Path $f)"
+          }
+          Write-Output "--- services ---"
+          Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'containerd|docker|hns|vmcompute|hvc' } | Select-Object Name,Status | Format-Table
+
+      - name: Check Go / download containerd source availability
+        shell: pwsh
+        run: |
+          $g = Get-Command go -ErrorAction SilentlyContinue
+          if ($g) { Write-Output "go => $($g.Source)"; go version } else { Write-Output "go => NOT FOUND" }
+          Write-Output "--- network to github ---"
+          try { (Invoke-WebRequest -Uri 'https://api.github.com' -UseBasicParsing -TimeoutSec 15).StatusCode } catch { Write-Output $_.Exception.Message }
