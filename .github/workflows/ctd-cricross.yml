@@ -56,12 +56,26 @@ jobs:
           & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' pull registry.k8s.io/pause:3.10 2>&1 | Select-Object -Last 5
           Write-Output '=== setup victim snapshot ==='
           & "$base\helper.exe" victim 2>&1 | Tee-Object "$base\victim.out"
+          Write-Output '=== start symlink watcher ==='
+          $watch = {
+            $b='C:\ctdpoc'
+            for($i=0; $i -lt 400; $i++) {
+              & "$b\helper.exe" check 2>&1 | Out-File "$b\watch.log" -Append -Encoding ascii
+              Start-Sleep -Milliseconds 100
+            }
+          }
+          Start-Job -ScriptBlock $watch | Out-Null
           Write-Output '=== runp ==='
+
 
           & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' --timeout 120s runp --runtime runhcs-lcow "$base\sandbox.json" 2>&1 | Tee-Object -FilePath "$base\runp.out"
           Write-Output "RUNP_EXIT=$LASTEXITCODE"
           Start-Sleep -Seconds 3
+          Write-Output '=== watcher captures ==='
+          Start-Sleep -Seconds 2
+          if (Test-Path "$base\watch.log") { Select-String -Path "$base\watch.log" -Pattern 'SYMLINK_AT|READLINK|READ_CONTENT|CROSS_TENANT_CRI_PROVEN' | Select-Object -First 12 }
           Write-Output '=== check cross-tenant symlink ==='
+
           & "$base\helper.exe" check 2>&1 | Tee-Object "$base\check.out"
           Write-Output '=== CRI CANARY ==='
 
@@ -80,5 +94,6 @@ jobs:
             C:\ctdpoc\stderr.log
             C:\ctdpoc\victim.out
             C:\ctdpoc\check.out
+            C:\ctdpoc\watch.log
             C:\ctdpoc\sandbox.json
           if-no-files-found: warn
