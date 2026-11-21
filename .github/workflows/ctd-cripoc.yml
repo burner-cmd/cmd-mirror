@@ -47,7 +47,7 @@ jobs:
           Write-Output '=== pull pause ==='
           & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' pull registry.k8s.io/pause:3.10 2>&1 | Select-Object -Last 5
           Write-Output '=== runp ==='
-          & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' runp --runtime runhcs-lcow "$base\sandbox.json" 2>&1 | Tee-Object -FilePath "$base\runp.out"
+          & "$base\crictl.exe" --runtime-endpoint 'npipe:////./pipe/ctd-grpc' --timeout 120s runp --runtime runhcs-lcow "$base\sandbox.json" 2>&1 | Tee-Object -FilePath "$base\runp.out"
           Write-Output "RUNP_EXIT=$LASTEXITCODE"
           Start-Sleep -Seconds 3
           Write-Output '=== CRI CANARY ==='
