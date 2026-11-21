@@ -1,0 +1,15 @@
+name: D17 containerd config dump
+on:
+  workflow_dispatch:
+jobs:
+  dump:
+    runs-on: windows-latest
+    steps:
+      - name: Dump default config
+        shell: pwsh
+        run: |
+          $base='C:\ctdpoc'
+          New-Item -ItemType Directory -Force -Path "$base\bin" | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-windows-amd64.tar.gz' -OutFile "$base\ctd.tar.gz" -UseBasicParsing
+          tar xzf "$base\ctd.tar.gz" -C "$base\bin"
+          & "$base\bin\bin\containerd.exe" config dump 2>&1 | Select-String -Pattern 'cni_|runtime_platforms|snapshotter|grpc.v1.cri|cri.v1.images|cri.v1.runtime|sandbox_image|default_runtime_name' -Context 1,2 | Select-Object -First 120
